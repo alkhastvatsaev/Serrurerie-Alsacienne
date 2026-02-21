@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
@@ -7,9 +7,24 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#0f172a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: "Serrurerie Alsacienne",
   description: "Plateforme Logistique de Serrurerie Alsacienne",
+  applicationName: "Serrurerie Als",
+  appleWebApp: {
+    capable: true,
+    title: "SA OS",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export default function RootLayout({
@@ -19,9 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="h-full">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
-      </head>
+      <head />
       <body className={`${inter.variable} font-sans antialiased h-full overflow-x-hidden bg-background`}>
         {children}
       </body>
