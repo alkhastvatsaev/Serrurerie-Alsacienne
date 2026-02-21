@@ -11,7 +11,7 @@ export interface AISuggestion {
 }
 
 /**
- * SERRURE Intelligence - Autonomous Dispatch Agent
+ * Intelligence Serrurerie Alsacienne - Autonomous Dispatch Agent
  */
 export class AIDispatchAgent {
   private static API_URL = "https://api.openai.com/v1/chat/completions";
@@ -127,7 +127,7 @@ export interface SecurityIncident {
 
 /**
  * STRASBOURG SENTINEL v6.0 - COMMERCIAL CONVERSION ENGINE
- * The central revenue driver for SERRURE OS.
+ * The central revenue driver for Serrurerie Alsacienne OS.
  * Transforms generic news into locksmithing opportunities.
  */
 export class SecurityScanningAgent {

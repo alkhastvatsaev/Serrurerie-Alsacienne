@@ -33,7 +33,7 @@ export function LoginScreen() {
         setStep("code");
         // Simulate SMS reception for user since Gateway isn't configured
         setTimeout(() => {
-            alert("🔔 SMS REÇU \n\nVotre code de sécurité SERRURE OS est : 1234");
+            alert("🔔 SMS REÇU \n\nVotre code de sécurité Serrurerie Alsacienne OS est : 1234");
         }, 500);
       } else {
         // If no users loaded yet, maybe we need to seed?
@@ -42,7 +42,7 @@ export function LoginScreen() {
            seedData();
            setTimeout(() => setError("Données initialisées. Réessayez."), 2000);
         } else {
-           setError("Numéro non reconnu dans l'annuaire SERRURE.");
+           setError("Numéro non reconnu dans l'annuaire Serrurerie Alsacienne.");
         }
       }
       setIsLoading(false);
@@ -78,7 +78,7 @@ export function LoginScreen() {
           <div className="w-16 h-16 bg-white rounded-[2rem] mx-auto mb-6 flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.3)]">
             <Lock className="w-8 h-8 text-black" />
           </div>
-          <h1 className="text-3xl font-black tracking-tighter mb-2">SERRURE OS</h1>
+          <h1 className="text-3xl font-black tracking-tighter mb-2">Serrurerie Alsacienne OS</h1>
           <p className="text-white/50 text-sm font-medium uppercase tracking-widest">Plateforme d'Intervention Sécurisée</p>
         </div>
 
@@ -141,7 +141,7 @@ export function LoginScreen() {
         
         <div className="text-center mt-8 space-y-4">
             <p className="text-[10px] uppercase font-bold text-white/20">
-                Serrure OS v2.4.0 (Build Pro)<br/>
+                Serrurerie Alsacienne OS v2.4.0 (Build Pro)<br/>
                 Connecté au Cloud Sécurisé
             </p>
             

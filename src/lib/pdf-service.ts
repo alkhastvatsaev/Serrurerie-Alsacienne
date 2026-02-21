@@ -8,7 +8,7 @@ const COMPANY_INFO = {
   name: "SMART LOCK ELITE",
   address: "17 Rue des Serruriers, 67000 Strasbourg",
   phone: "03 88 00 11 22",
-  email: "contact@smartlock-elite.fr",
+  email: "contact@serrurerie-alsacienne.fr",
   siret: "888 111 222 00011"
 };
 

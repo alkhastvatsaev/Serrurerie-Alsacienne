@@ -50,7 +50,7 @@ const InteractiveMap = dynamic(() => import("./InteractiveMap"), {
   loading: () => <div className="fixed inset-0 bg-secondary/30 animate-pulse flex items-center justify-center">Chargement de la carte...</div>
 });
 
-// 🚀 STRASBOURG SERRURE OS - ULTRA-ROI VERSION
+// 🚀 STRASBOURG Serrurerie Alsacienne OS - ULTRA-ROI VERSION
 // Purged of non-essential features for maximum performance.
 
 export function AdminDashboard() {
@@ -235,7 +235,7 @@ export function AdminDashboard() {
   useEffect(() => {
     if (callStatus === 'connected') {
       const phrases = [
-        { role: 'tech', text: 'Bonjour, SERRURE Strasbourg à votre service.' },
+        { role: 'tech', text: 'Bonjour, Serrurerie Alsacienne à votre service.' },
         { role: 'client', text: 'Bonjour, je suis bloquée devant chez moi au 15 Quai des Bateliers.' },
         { role: 'tech', text: 'Très bien, je vois que vous êtes près du Centre. Un technicien arrive dans 15min.' },
         { role: 'client', text: 'Merci beaucoup, c\'est urgent car j\'ai laissé le feu allumé.' }
@@ -277,7 +277,7 @@ export function AdminDashboard() {
           {
             headers: {
               'Accept-Language': 'fr-FR,fr;q=0.9',
-              'User-Agent': 'SerrureApp-Admin-Dashboard/1.0'
+              'User-Agent': 'SerrurerieAlsacienne-Admin-Dashboard/1.0'
             }
           }
         );
@@ -2078,7 +2078,7 @@ export function AdminDashboard() {
          <DialogContent className="max-w-lg w-[95vw] h-[90vh] bg-slate-50/50 backdrop-blur-3xl rounded-[3rem] border-none p-0 overflow-hidden text-slate-900 flex flex-col shadow-[0_40px_100px_rgba(0,0,0,0.3)]">
             <DialogHeader className="sr-only">
               <DialogTitle>Hub Comptabilité & IA Finance</DialogTitle>
-              <DialogDescription>Gestion financière avancée et analyse prédictive SERRURE OS.</DialogDescription>
+              <DialogDescription>Gestion financière avancée et analyse prédictive Serrurerie Alsacienne OS.</DialogDescription>
             </DialogHeader>
 
             {/* Header */}
@@ -2318,7 +2318,7 @@ export function AdminDashboard() {
         <DialogContent className="max-w-lg w-[95vw] h-[90vh] bg-slate-50/50 backdrop-blur-3xl rounded-[3rem] border-none p-0 overflow-hidden text-slate-900 flex flex-col shadow-[0_40px_100px_rgba(0,0,0,0.3)]">
           <DialogHeader className="sr-only">
             <DialogTitle>Centre de Téléphonie VoIP</DialogTitle>
-            <DialogDescription>Gestion des communications entrantes et sortantes SERRURE OS.</DialogDescription>
+            <DialogDescription>Gestion des communications entrantes et sortantes Serrurerie Alsacienne OS.</DialogDescription>
           </DialogHeader>
 
           <div className="p-8 space-y-8">
@@ -2814,7 +2814,7 @@ export function AdminDashboard() {
             <div className="flex justify-between items-center">
               <div>
                 <DialogTitle className="text-2xl font-black tracking-tighter uppercase leading-none">Console Admin</DialogTitle>
-                <p className="text-2xs font-black text-indigo-600 uppercase tracking-widest mt-1">SERRURE OS v2.4 - Autonomous Mode</p>
+                <p className="text-2xs font-black text-indigo-600 uppercase tracking-widest mt-1">Serrurerie Alsacienne OS v2.4 - Autonomous Mode</p>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center text-white shadow-2xl">
                 <Settings className="w-6 h-6 animate-spin-slow" />

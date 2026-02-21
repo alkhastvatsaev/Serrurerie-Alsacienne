@@ -1,8 +1,8 @@
-# SERRURE OS - Intelligence & Agents Architecture
+# Serrurerie Alsacienne OS - Intelligence & Agents Architecture
 
 ## 🌐 Overview
 
-SERRURE OS (Smartlock Manager) is an advanced operations management platform tailored for locksmiths and security professionals. Unlike traditional CRMs, SERRURE OS utilizes a suite of AI-driven cognitive agents to automate dispatching, optimize van stocks, and proactively generate revenue opportunities from real-time local events.
+Serrurerie Alsacienne OS (Smartlock Manager) is an advanced operations management platform tailored for locksmiths and security professionals. Unlike traditional CRMs, Serrurerie Alsacienne OS utilizes a suite of AI-driven cognitive agents to automate dispatching, optimize van stocks, and proactively generate revenue opportunities from real-time local events.
 
 Built on a modern stack (Next.js 16, React 19, Firebase, Zustand), the architecture separates the UI application layer from the intelligent background services.
 
@@ -12,7 +12,7 @@ Built on a modern stack (Next.js 16, React 19, Firebase, Zustand), the architect
 
 The project's "brain" lives in the `src/services` directory, consisting of two primary agents:
 
-### 1. SERRURE Intelligence (Autonomous Dispatch Agent)
+### 1. Intelligence Serrurerie Alsacienne (Autonomous Dispatch Agent)
 
 **File:** `src/services/ai-agent.ts`
 
@@ -67,5 +67,5 @@ The system bridges localized agent memory and global operations. `useStore` init
 1. **Lead Generation**: The Sentinel pipeline intercepts a local burglary event via `api/news`.
 2. **Analysis**: The `SecurityScanningAgent` parses the data, calculates an e.g., €800 revenue potential, generates a sales pitch, and alerts the UI.
 3. **Dispatch Initialization**: The human dispatcher reviews the generated alert and creates an `Intervention`.
-4. **Agent Routing**: `SERRURE Intelligence` takes over, pulling coordinates from `geo-utils` and running `getSmartDispatch`. It finds that "Marc" is within the geographic polygon and has an "A2P\*\*\* Lock" currently assigned to his `VanStock`.
+4. **Agent Routing**: `Intelligence Serrurerie Alsacienne` takes over, pulling coordinates from `geo-utils` and running `getSmartDispatch`. It finds that "Marc" is within the geographic polygon and has an "A2P\*\*\* Lock" currently assigned to his `VanStock`.
 5. **Execution**: The job is proposed to Marc. Once accepted, Firebase syncs the updated Status, modifying the global map and inventory states in real time.

@@ -98,13 +98,13 @@ const DUMMY_SCHEDULES: WorkSchedule[] = [
 ];
 
 const DUMMY_USERS: User[] = [
-  { id: '1', name: 'TIMOUR', role: 'admin', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', phone: '07 67 69 38 04', email: 'admin@serrure-strasbourg.fr' },
-  { id: '2', name: 'Marc', role: 'tech', status: 'active', avatar_url: '/avatars/marc.png', phone: '0611223344', email: 'marc@serrure-strasbourg.fr', specialties: ['Ouverture Fine', 'A2P***', 'Coffre-fort'], performance_score: 98, completed_missions: 1240 },
-  { id: '3', name: 'Sophie', role: 'tech', status: 'active', avatar_url: '/avatars/sophie.png', phone: '0788990011', email: 'sophie@serrure-strasbourg.fr', specialties: ['Contrôle d\'Accès', 'Électronique', 'Nuki Pro'], performance_score: 95, completed_missions: 856 },
-  { id: '4', name: 'Lucas', role: 'tech', status: 'active', avatar_url: '/avatars/lucas.png', phone: '0655443322', email: 'lucas@serrure-strasbourg.fr', specialties: ['Blindage', 'Portes de Cave', 'Soudure'], performance_score: 92, completed_missions: 1120 },
-  { id: '5', name: 'Hugo', role: 'tech', status: 'active', avatar_url: '/avatars/hugo.png', phone: '0622334455', email: 'hugo@serrure-strasbourg.fr', specialties: ['Automobile', 'Transpondeur', 'OBDII'], performance_score: 89, completed_missions: 645 },
-  { id: '6', name: 'Yanis', role: 'tech', status: 'active', avatar_url: '/avatars/yanis.png', phone: '0711223344', email: 'yanis@serrure-strasbourg.fr', specialties: ['Maintenance Gérance', 'Vigik', 'Multimarques'], performance_score: 94, completed_missions: 932 },
-  { id: '7', name: 'Thomas', role: 'tech', status: 'active', avatar_url: '/avatars/thomas.png', phone: '0699887766', email: 'thomas@serrure-strasbourg.fr', specialties: ['Domotique', 'Volets Roulants', 'Serrurerie Traditionnelle'], performance_score: 88, completed_missions: 420 },
+  { id: '1', name: 'TIMOUR', role: 'admin', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', phone: '07 67 69 38 04', email: 'admin@serrurerie-alsacienne.fr' },
+  { id: '2', name: 'Marc', role: 'tech', status: 'active', avatar_url: '/avatars/marc.png', phone: '0611223344', email: 'marc@serrurerie-alsacienne.fr', specialties: ['Ouverture Fine', 'A2P***', 'Coffre-fort'], performance_score: 98, completed_missions: 1240 },
+  { id: '3', name: 'Sophie', role: 'tech', status: 'active', avatar_url: '/avatars/sophie.png', phone: '0788990011', email: 'sophie@serrurerie-alsacienne.fr', specialties: ['Contrôle d\'Accès', 'Électronique', 'Nuki Pro'], performance_score: 95, completed_missions: 856 },
+  { id: '4', name: 'Lucas', role: 'tech', status: 'active', avatar_url: '/avatars/lucas.png', phone: '0655443322', email: 'lucas@serrurerie-alsacienne.fr', specialties: ['Blindage', 'Portes de Cave', 'Soudure'], performance_score: 92, completed_missions: 1120 },
+  { id: '5', name: 'Hugo', role: 'tech', status: 'active', avatar_url: '/avatars/hugo.png', phone: '0622334455', email: 'hugo@serrurerie-alsacienne.fr', specialties: ['Automobile', 'Transpondeur', 'OBDII'], performance_score: 89, completed_missions: 645 },
+  { id: '6', name: 'Yanis', role: 'tech', status: 'active', avatar_url: '/avatars/yanis.png', phone: '0711223344', email: 'yanis@serrurerie-alsacienne.fr', specialties: ['Maintenance Gérance', 'Vigik', 'Multimarques'], performance_score: 94, completed_missions: 932 },
+  { id: '7', name: 'Thomas', role: 'tech', status: 'active', avatar_url: '/avatars/thomas.png', phone: '0699887766', email: 'thomas@serrurerie-alsacienne.fr', specialties: ['Domotique', 'Volets Roulants', 'Serrurerie Traditionnelle'], performance_score: 88, completed_missions: 420 },
 ]
 
 const DUMMY_CLIENTS: Client[] = [

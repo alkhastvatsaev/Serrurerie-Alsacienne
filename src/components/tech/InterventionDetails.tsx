@@ -519,7 +519,7 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                         setTimeout(() => {
                             setIsPaymentProcessing(false);
                             if (paymentMethod === 'card') {
-                                window.open('https://buy.stripe.com/demo_vatsaev_serrure', '_blank');
+                                window.open('https://buy.stripe.com/demo_vatsaev_serrurerie_alsacienne', '_blank');
                             } else if (paymentMethod === 'apple_pay') {
                                 alert("Simulation Apple Pay : Posez votre iPhone sur le terminal ou validez avec FaceID.");
                                 setPaymentStatus('paid');

@@ -12,7 +12,7 @@ NC='\033[0m'
 clear
 echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║                                          ║${NC}"
-echo -e "${BLUE}║${NC}   ${BOLD}${CYAN}⚡ SERRURE OS ${NC}${BLUE}— Dispatch Platform    ${BLUE}║${NC}"
+echo -e "${BLUE}║${NC}   ${BOLD}${CYAN}⚡ Serrurerie Alsacienne OS ${NC}${BLUE}— Dispatch Platform    ${BLUE}║${NC}"
 echo -e "${BLUE}║${NC}      ${ORANGE}v2.0 — Strasbourg Edition${NC}          ${BLUE}║${NC}"
 echo -e "${BLUE}║                                          ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"

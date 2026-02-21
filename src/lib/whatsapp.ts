@@ -22,7 +22,7 @@ export const whatsappTemplates = {
   },
   
   etaToClient: (techName: string, minutes: number) => {
-    return `Bonjour, c'est ${techName} de SERRURE Strasbourg. 🛠️ Je suis en route pour votre intervention. Arrivée prévue dans environ ${minutes} minutes. À tout de suite !`;
+    return `Bonjour, c'est ${techName} de Serrurerie Alsacienne. 🛠️ Je suis en route pour votre intervention. Arrivée prévue dans environ ${minutes} minutes. À tout de suite !`;
   },
   
   confirmationToClient: (clientName: string, intervention: any) => {

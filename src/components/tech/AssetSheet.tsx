@@ -43,7 +43,7 @@ export function AssetSheet({ asset }: AssetSheetProps) {
             <Shield className="w-3 h-3 text-primary" />
          </div>
          <p className="text-[10px] font-bold text-primary/70 italic leading-snug">
-            Données techniques certifiées par le réseau SERRURE PRO™
+            Données techniques certifiées par le réseau Serrurerie Alsacienne PRO™
          </p>
       </div>
     </div>

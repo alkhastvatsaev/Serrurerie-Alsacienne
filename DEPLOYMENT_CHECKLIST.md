@@ -1,4 +1,4 @@
-# 🚀 Checklist de Déploiement — SERRURE Strasbourg
+# 🚀 Checklist de Déploiement — Serrurerie Alsacienne
 
 Ce document récapitule les étapes nécessaires pour passer l'application en production.
 
@@ -55,7 +55,7 @@ service cloud.firestore {
 
 ## 3. Configuration Nom de Domaine
 
-1.  Acheter votre domaine (ex: `serrure-strasbourg.fr`).
+1.  Acheter votre domaine (ex: `serrurerie-alsacienne.fr`).
 2.  Lier le domaine dans Vercel (Section Settings -> Domains).
 3.  **HTTPS** : Vercel gérera le certificat SSL automatiquement (requis pour Apple Pay).
 

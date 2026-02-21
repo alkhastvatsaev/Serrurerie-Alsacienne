@@ -1,8 +1,8 @@
-# 🎨 Écosystème de Design - SERRURE Dashboard
+# 🎨 Écosystème de Design - Serrurerie Alsacienne Dashboard
 
 ## Vue d'ensemble
 
-Ce document décrit l'écosystème de design cohérent implémenté dans l'application SERRURE.
+Ce document décrit l'écosystème de design cohérent implémenté dans l'application Serrurerie Alsacienne.
 
 ---
 
