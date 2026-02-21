@@ -517,7 +517,7 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                     onClick={async () => {
                         setIsPaymentProcessing(true);
                         try {
-                            if (paymentMethod === 'card') {
+                            if (paymentMethod === 'card' || paymentMethod === 'apple_pay') {
                                 const amount = calculateIntTotal();
                                 const res = await fetch('/api/checkout', {
                                     method: 'POST',
@@ -536,10 +536,7 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                                 }
                             } else {
                                 setTimeout(() => {
-                                    if (paymentMethod === 'apple_pay') {
-                                        alert("Simulation Apple Pay : Posez votre iPhone sur le terminal ou validez avec FaceID.");
-                                        setPaymentStatus('paid');
-                                    } else if (paymentMethod === '3x') {
+                                    if (paymentMethod === '3x') {
                                         window.open('https://getalma.eu/demo_checkout', '_blank');
                                         setPaymentStatus('paid');
                                     } else {
@@ -552,7 +549,7 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                             console.error(err);
                             alert("Erreur de paiement.");
                         } finally {
-                            if (paymentMethod !== 'card') {
+                            if (paymentMethod !== 'card' && paymentMethod !== 'apple_pay') {
                                 setIsPaymentProcessing(false);
                             }
                         }
