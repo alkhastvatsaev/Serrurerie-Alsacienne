@@ -102,6 +102,9 @@ export function AdminDashboard() {
   // Real-time Security Monitoring (Sentinel)
   useEffect(() => {
     initSentinel();
+    if (useStore.getState().interventions.length === 0) {
+      useStore.getState().seedData();
+    }
   }, []);
 
   const generateAISuggestion = async () => {
@@ -376,7 +379,7 @@ export function AdminDashboard() {
                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
                 )}
               </div>
-              <span className="text-2xs font-black uppercase tracking-widest opacity-70 group-hover:opacity-100 transition-opacity hidden lg:inline">Business Intelligence</span>
+              <span className="text-2xs font-black uppercase tracking-widest opacity-70 group-hover:opacity-100 transition-opacity hidden lg:inline">Notifications</span>
               <span className="text-2xs font-black uppercase tracking-widest opacity-70 lg:hidden">Manager Ops</span>
               <ChevronDown className={`w-3 h-3 transition-transform duration-500 ${isNotifCenterOpen ? 'rotate-180' : ''}`} />
           </motion.button>
