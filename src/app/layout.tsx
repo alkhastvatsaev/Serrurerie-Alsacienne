@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Supervision Pro | Gestion Logistique Serrurerie",
-  description: "Solution d'Asset Management par QR Code pour les professionnels.",
+  title: "Serrurerie Alsacienne",
+  description: "Plateforme Logistique de Serrurerie Alsacienne",
 };
 
 export default function RootLayout({
