@@ -514,23 +514,48 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
               <div className="flex gap-2">
                   {/* Dynamic payment button based on selection */}
                   <Button
-                    onClick={() => {
+                    onClick={async () => {
                         setIsPaymentProcessing(true);
-                        setTimeout(() => {
-                            setIsPaymentProcessing(false);
+                        try {
                             if (paymentMethod === 'card') {
-                                window.open('https://buy.stripe.com/demo_vatsaev_serrurerie_alsacienne', '_blank');
-                            } else if (paymentMethod === 'apple_pay') {
-                                alert("Simulation Apple Pay : Posez votre iPhone sur le terminal ou validez avec FaceID.");
-                                setPaymentStatus('paid');
-                            } else if (paymentMethod === '3x') {
-                                window.open('https://getalma.eu/demo_checkout', '_blank');
-                                setPaymentStatus('paid');
+                                const amount = calculateIntTotal();
+                                const res = await fetch('/api/checkout', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                        amount, 
+                                        description: `Intervention à ${intervention.address.split(',')[0]}`,
+                                        interventionId: intervention.id
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.url) {
+                                    window.location.href = data.url;
+                                } else {
+                                    alert("Erreur Stripe: " + (data.error || "Session ignorée"));
+                                }
                             } else {
-                                alert(`Demande de ${paymentMethod} enregistrée.`);
-                                setPaymentStatus('paid');
+                                setTimeout(() => {
+                                    if (paymentMethod === 'apple_pay') {
+                                        alert("Simulation Apple Pay : Posez votre iPhone sur le terminal ou validez avec FaceID.");
+                                        setPaymentStatus('paid');
+                                    } else if (paymentMethod === '3x') {
+                                        window.open('https://getalma.eu/demo_checkout', '_blank');
+                                        setPaymentStatus('paid');
+                                    } else {
+                                        alert(`Demande de ${paymentMethod} enregistrée.`);
+                                        setPaymentStatus('paid');
+                                    }
+                                }, 1200);
                             }
-                        }, 1200);
+                        } catch (err) {
+                            console.error(err);
+                            alert("Erreur de paiement.");
+                        } finally {
+                            if (paymentMethod !== 'card') {
+                                setIsPaymentProcessing(false);
+                            }
+                        }
                     }}
                     disabled={isPaymentProcessing}
                     className={`flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg border-none active:scale-95 transition-all flex items-center gap-3 ${

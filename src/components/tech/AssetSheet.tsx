@@ -3,18 +3,33 @@
 
 import { Asset } from "@/types";
 import { Badge } from "@/components/ui/badge";
-import { History, Shield, Ruler, Settings, QrCode } from "lucide-react";
+import { History, Shield, Ruler, Settings } from "lucide-react";
+import QRCode from 'qrcode';
+import { useEffect, useState } from "react";
 
 interface AssetSheetProps {
   asset: Asset;
 }
 
 export function AssetSheet({ asset }: AssetSheetProps) {
+  const [qrSrc, setQrSrc] = useState<string>('');
+
+  useEffect(() => {
+    QRCode.toDataURL(asset.qr_code_id, {
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' }
+    }).then(setQrSrc).catch(console.error);
+  }, [asset.qr_code_id]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col items-center gap-3 mb-4">
-         <div className="bg-primary p-4 rounded-3xl shadow-lg shadow-primary/20 rotate-[-2deg]">
-            <QrCode className="w-12 h-12 text-white" />
+         <div className="bg-white p-3 rounded-3xl shadow-lg shadow-black/10 rotate-[-2deg] border-4 border-primary/20">
+            {qrSrc ? (
+              <img src={qrSrc} alt="QR Code" className="w-16 h-16 object-contain" />
+            ) : (
+              <div className="w-16 h-16 bg-muted animate-pulse rounded-2xl" />
+            )}
          </div>
          <Badge className="bg-secondary/60 text-foreground border-none rounded-full px-4 py-1 font-mono text-[10px] font-black tracking-widest ios-shadow">
             {asset.qr_code_id}
