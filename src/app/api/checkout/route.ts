@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-01-27.acacia', // Update to latest supported version if needed
+      apiVersion: '2026-01-28.clover', // Update to latest supported version if needed
     });
 
     const session = await stripe.checkout.sessions.create({
