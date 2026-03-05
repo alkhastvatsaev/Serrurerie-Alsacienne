@@ -460,6 +460,7 @@ export const useStore = create<AppState>()((set, get) => ({
       })),
       
       initListeners: () => {
+        if (!db) return;
         // 1. Listen for Interventions - With Error Handling
         try {
             onSnapshot(collection(db, 'interventions'), (snapshot) => {
