@@ -379,17 +379,17 @@ const createSafeStorage = (): StateStorage => {
 };
 
 export const useStore = create<AppState>()((set, get) => ({
-  users: [],
-  clients: [],
-  assets: [],
-  inventory: [],
+  users: DUMMY_USERS,
+  clients: DUMMY_CLIENTS,
+  assets: DUMMY_ASSETS,
+  inventory: DUMMY_INVENTORY,
   interventions: [],
-  vanStocks: [],
-  schedules: [],
+  vanStocks: DUMMY_VAN_STOCKS,
+  schedules: DUMMY_SCHEDULES,
   messages: [],
   currentUser: null, // No default user, forces login
-  zones: [],
-  suppliers: [],
+  zones: DEFAULT_ZONES,
+  suppliers: SUPPLIERS,
   notifications: [
     { id: '1', type: 'info', title: 'Standards Mondiaux Actifs', message: 'Catalogue services aligné sur Yale, Allegion & dormakaba.', timestamp: new Date().toLocaleTimeString(), read: false },
     { id: '2', type: 'success', title: 'Automobile Pro', message: 'Nouveaux kits OBDII de programmation BMW/Audi disponibles en stock central.', timestamp: new Date().toLocaleTimeString(), read: false }
