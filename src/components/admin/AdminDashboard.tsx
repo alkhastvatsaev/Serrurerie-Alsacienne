@@ -16,7 +16,8 @@ import {
    Building2, Home, Briefcase, MessageSquare, Users, Calendar, Megaphone, BarChart3,
     Moon, Zap, CloudRain, ShieldCheck,
     ExternalLink, Globe, MousePointerClick, Search, LineChart, ShieldAlert, Trophy, Star,
-    CreditCard, Euro, Wallet, PieChart, Menu, LayoutGrid, TrendingUp, Receipt, Phone, Mail
+    CreditCard, Euro, Wallet, PieChart, Menu, LayoutGrid, TrendingUp, Receipt, Phone, Mail,
+    Mic, Loader2, Square
 } from "lucide-react";
 import { downloadPDF, sendPDFByEmail } from "@/lib/pdf-service";
 import { exportToCSV } from "@/lib/export-service";
@@ -30,7 +31,7 @@ import { findTechForLocation } from "@/lib/geo-utils";
 import { calculatePriceBreakdown, formatPrice } from "@/lib/pricing";
 import dynamic from "next/dynamic";
 import { CustomerProfile } from "./CustomerProfile";
-import { useState, useMemo, useEffect, Fragment } from "react";
+import { useState, useMemo, useEffect, Fragment, useRef } from "react";
 import { Notification } from "@/types";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -340,6 +341,86 @@ export function AdminDashboard() {
   const toggleRole = () => {
     const nextUser = currentUser?.role === 'admin' ? users[1] : users[0];
     setCurrentUser(nextUser);
+  };
+
+  // Voice to Mission State
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessingVocally, setIsProcessingVocally] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  const handleVoiceMission = async () => {
+    if (isRecording) {
+      // Stop recording
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+      }
+    } else {
+      // Start recording
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          setIsProcessingVocally(true);
+
+          try {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'mission_dictation.webm');
+
+            const res = await fetch('/api/speech-to-mission', {
+              method: 'POST',
+              body: formData
+            });
+
+            const data = await res.json();
+            if (data.success && data.missionData) {
+              const aiData = data.missionData;
+              setNewMission(prev => ({
+                ...prev,
+                address: aiData.address || '',
+                category: aiData.category || 'repair',
+                is_emergency: !!aiData.is_emergency,
+                description: [
+                  aiData.clientName ? `Client: ${aiData.clientName}` : '',
+                  aiData.clientPhone ? `Tel: ${aiData.clientPhone}` : '',
+                  aiData.description || ''
+                ].filter(Boolean).join('\n')
+              }));
+              addNotification({
+                type: 'success',
+                title: 'Mission Vocale',
+                message: 'Transcription et formatage IA réussis !'
+              });
+              setIsCreateModalOpen(true);
+            } else {
+              throw new Error(data.error || 'Erreur IA');
+            }
+          } catch (error) {
+            console.error(error);
+            addNotification({ type: 'warning', title: 'Erreur', message: "Impossible d'analyser la voix." });
+          } finally {
+            setIsProcessingVocally(false);
+            // close stream
+            stream.getTracks().forEach(track => track.stop());
+          }
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error('Erreur accès micro:', err);
+        addNotification({ type: 'warning', title: 'Microphone requis', message: "Autorisez l'accès au micro pour dicter." });
+      }
+    }
   };
 
   return (
@@ -769,6 +850,14 @@ export function AdminDashboard() {
                 className={`${isMobile ? 'h-10 w-10 px-1' : 'h-12 w-12'} rounded-full flex items-center justify-center transition-all group ${isLeftSidebarOpen ? 'bg-primary text-white shadow-lg' : 'hover:bg-black/5 text-muted-foreground'}`}
             >
                 <LayoutDashboard className={`w-5 h-5 ${isLeftSidebarOpen ? 'text-white' : 'group-hover:scale-110'} transition-transform`} />
+            </Button>
+
+            <Button
+                onClick={handleVoiceMission}
+                disabled={isProcessingVocally}
+                className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full ${isRecording ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50' : isProcessingVocally ? 'bg-indigo-500 text-white' : 'bg-primary text-white'} font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center border-none ml-2 mr-1`}
+            >
+                {isProcessingVocally ? <Loader2 className="w-5 h-5 animate-spin" /> : isRecording ? <Square className="w-4 h-4 fill-current" /> : <Mic className="w-5 h-5" />}
             </Button>
 
             <Button
