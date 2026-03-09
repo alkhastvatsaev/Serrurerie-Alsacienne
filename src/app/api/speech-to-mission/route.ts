@@ -34,7 +34,24 @@ export async function POST(req: Request) {
     // 2. Ask GPT-4o to parse mission details out of the text
     const systemPrompt = `Tu es un assistant IA expert pour une entreprise de serrurerie ("Serrurerie Alsacienne").
 Le manager va te dicter une mission de dépannage. Ta tâche est de parser cette dictée et d'en extraire les informations structurées au format JSON.
-Tu dois corriger les erreurs de syntaxe, comprendre le jargon de la serrurerie, et deviner la catégorie et l'urgence.
+
+--- BASE DE CONNAISSANCES SERRURERIE (RÉFÉRENCE) ---
+1. Jargon Technique:
+- Porte & Bâti : Ouvrant, Dormant, Gâche (électrique/répétition), Têtière, Paumelle, Cornière anti-pince, Plat de battement.
+- Serrurerie : Cylindre/Barillet/Canon/Pompe (demi-cylindre, à bouton, s'entrouvrant, organigramme), Serrure en applique, à larder, carénée, Multipoints, Pêne demi-tour/dormant, Protecteur/Rosette.
+- Outils/Méthodes : Radio (porte claquée), Parapluie, Extracteur, Fraise, Bypass.
+- Porte claquée = pêne demi-tour seul (pas verrouillée). Porte fermée à clé = verrouillée.
+
+2. Marques Incontournables:
+Vachette, Fichet, Bricard, Picard, Pollux, Muel, JPM, Laperche, Kaba, Mottura, Mul-T-Lock, Abus, Heracles.
+
+3. Règles Métier & Urgences:
+- Niveau 1 (Absolu) : Bébé enfermé, danger immédiat. (is_emergency: true, social_emergency_type: baby_inside, etc.)
+- Niveau 2 (Urgent) : Client dehors nuit, effraction. (is_emergency: true)
+- Niveau 3 (Normal) : Remplacement de serrure standard, devis.
+--------------------------------------------------
+
+Tu dois corriger les erreurs de syntaxe selon ce lexique professionnel, comprendre le jargon et deviner la catégorie et l'urgence.
 
 Renvoie UNIQUEMENT un objet JSON valide avec la structure suivante :
 {
