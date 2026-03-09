@@ -13,11 +13,30 @@ export interface User {
   completed_missions?: number;
 }
 
+export interface ActivityItem {
+  id: string;
+  type: 'email' | 'call' | 'intervention' | 'note';
+  title: string;
+  description: string;
+  timestamp: string;
+  status?: string;
+  metadata?: {
+    tech_ids?: string[];
+    duration?: number;
+    direction?: 'inbound' | 'outbound';
+    email_id?: string;
+  };
+}
+
 export interface Client {
   id: string;
   name: string;
   address: string;
   contact_info: string;
+  phone?: string;
+  email?: string;
+  last_contact_date?: string;
+  activities?: ActivityItem[];
 }
 
 export interface Asset {
@@ -50,8 +69,10 @@ export interface VanStock {
 
 export interface Intervention {
   id: string;
-  tech_id: string;
+  tech_id: string; // Primary tech
+  tech_ids?: string[]; // All techs involved (multi-day/complex)
   asset_id: string;
+  client_id?: string; // Explicitly link to client for easier lookup
   date: string;
   time: string;
   status: "pending" | "in_progress" | "waiting_approval" | "done";
@@ -75,6 +96,12 @@ export interface Intervention {
   tracking_url?: string;
   tracking_active?: boolean;
   social_emergency_type?: "none" | "baby_inside" | "pet_trapped" | "elderly_person";
+  history?: {
+    date: string;
+    tech_ids?: string[];
+    tech_name: string;
+    notes: string;
+  }[];
 }
 
 export interface Supplier {

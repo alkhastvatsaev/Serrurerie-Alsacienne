@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
-import { User, Client, Asset, InventoryItem, Intervention, VanStock, Supplier, Notification, WorkSchedule, Zone, ZonePosition } from '@/types';
+import { User, Client, Asset, InventoryItem, Intervention, VanStock, Supplier, Notification, WorkSchedule, Zone, ZonePosition, ActivityItem } from '@/types';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, updateDoc, addDoc, query, orderBy, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, getStorage } from "firebase/storage";
@@ -16,6 +16,15 @@ interface Message {
   timestamp: string | { toDate?: () => Date } | null;
 }
 
+interface ActiveCall {
+  id: string;
+  phoneNumber: string;
+  clientId: string | null;
+  clientName: string;
+  timestamp: any;
+  status: 'ringing' | 'accepted' | 'missed';
+}
+
 interface AppState {
   users: User[];
   clients: Client[];
@@ -26,20 +35,25 @@ interface AppState {
   schedules: WorkSchedule[];
   messages: Message[];
   currentUser: User | null;
+  currentProfileClient: Client | null; // For the CRM auto-popup/view
   zones: Zone[];
   suppliers: Supplier[];
   notifications: Notification[];
   securityIncidents: SentinelEvent[];
+  activeCalls: ActiveCall[];
+  
   addSecurityIncident: (incident: SentinelEvent) => void;
   addNotification: (notif: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
   markNotificationsAsRead: () => void;
   
   uploadImage: (file: File | Blob, path: string) => Promise<string>;
   setCurrentUser: (user: User | null) => void;
+  setProfileClient: (client: Client | null) => void;
   updateIntervention: (id: string, updates: Partial<Intervention>) => void;
   deleteIntervention: (id: string) => Promise<void>;
   decrementStock: (itemId: string, quantity: number) => void;
   addIntervention: (intervention: Intervention) => void;
+  addClientActivity: (clientId: string, activity: Omit<ActivityItem, 'id' | 'timestamp'>) => Promise<void>;
   addMessage: (msg: Omit<Message, 'id' | 'timestamp'>) => void;
   updateZones: (zones: Zone[]) => void;
   updateSchedule: (id: string, updates: Partial<WorkSchedule>) => void;
@@ -388,6 +402,8 @@ export const useStore = create<AppState>()((set, get) => ({
   schedules: DUMMY_SCHEDULES,
   messages: [],
   currentUser: null, // No default user, forces login
+  currentProfileClient: null,
+  activeCalls: [],
   zones: DEFAULT_ZONES,
   suppliers: SUPPLIERS,
   notifications: [
@@ -437,6 +453,26 @@ export const useStore = create<AppState>()((set, get) => ({
       },
 
       setCurrentUser: (user) => set({ currentUser: user }),
+  setProfileClient: (client) => set({ currentProfileClient: client }),
+  
+  addClientActivity: async (clientId, activity) => {
+    const timestamp = new Date().toISOString();
+    const newActivity: ActivityItem = {
+      ...activity,
+      id: Math.random().toString(36).substr(2, 9),
+      timestamp
+    };
+    
+    const clientRef = doc(db, 'clients', clientId);
+    const client = get().clients.find(c => c.id === clientId);
+    if (client) {
+      const updatedActivities = [newActivity, ...(client.activities || [])];
+      await updateDoc(clientRef, { 
+        activities: updatedActivities,
+        last_contact_date: timestamp
+      });
+    }
+  },
 
       updateSchedule: (id, updates) => set((state) => {
         const newSchedules = state.schedules.map(s => s.id === id ? { ...s, ...updates } : s);
@@ -470,6 +506,23 @@ export const useStore = create<AppState>()((set, get) => ({
                 console.error("Interventions listener error:", error);
             });
         } catch (e) { console.error("Could not init int listener", e); }
+
+        // Special listener for active calls (CRM auto-popup)
+        try {
+          onSnapshot(query(collection(db, 'active_calls'), orderBy('timestamp', 'desc')), (snapshot) => {
+            const calls = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActiveCall));
+            set({ activeCalls: calls });
+            
+            // Auto-open profile if it's a new ringing call
+            const latestCall = calls[0];
+            if (latestCall && latestCall.status === 'ringing') {
+              const client = get().clients.find(c => c.id === latestCall.clientId);
+              if (client) {
+                set({ currentProfileClient: client });
+              }
+            }
+          });
+        } catch (e) { console.error("Could not init active calls listener", e); }
 
         // 2. Listen for Messages
         try {

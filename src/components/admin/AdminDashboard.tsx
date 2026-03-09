@@ -9,14 +9,14 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { 
   Truck, Settings, LayoutDashboard, History as HistoryIcon, 
   MessageCircle, ClipboardCheck,
-  CheckCircle, ChevronUp, ChevronDown, X, Phone, MapPin,
+  CheckCircle, ChevronUp, ChevronDown, X, MapPin,
    Eye, Send, AlertTriangle, Plus, Crosshair, Clock, User as UserIcon,
    BrainCircuit, Sparkles, Save, Bell, ChevronLeft, ChevronRight, RotateCcw,
    FileText, Download, Printer, ArrowDownCircle, ShoppingBag, Package, BadgeEuro, UserCircle, Info,
-   Building2, Home, Briefcase, MessageSquare, Users, Calendar, Shield, Megaphone, BarChart3,
-    Moon, Zap, CloudRain, ShieldCheck, PhoneCall, PhoneForwarded, Mic, MicOff, Keyboard, PhoneIncoming, PhoneOutgoing, Volume2, Video, Delete, Radio, SignalLow,
+   Building2, Home, Briefcase, MessageSquare, Users, Calendar, Megaphone, BarChart3,
+    Moon, Zap, CloudRain, ShieldCheck,
     ExternalLink, Globe, MousePointerClick, Search, LineChart, ShieldAlert, Trophy, Star,
-    CreditCard, Euro, Wallet, PieChart, Menu, LayoutGrid, TrendingUp, Receipt
+    CreditCard, Euro, Wallet, PieChart, Menu, LayoutGrid, TrendingUp, Receipt, Phone, Mail
 } from "lucide-react";
 import { downloadPDF, sendPDFByEmail } from "@/lib/pdf-service";
 import { exportToCSV } from "@/lib/export-service";
@@ -27,9 +27,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AIDispatchAgent, SecurityScanningAgent, SecurityIncident } from "@/services/ai-agent";
 import { findTechForLocation } from "@/lib/geo-utils";
-import { useTwilioVoice } from "@/lib/useTwilioVoice";
 import { calculatePriceBreakdown, formatPrice } from "@/lib/pricing";
 import dynamic from "next/dynamic";
+import { CustomerProfile } from "./CustomerProfile";
 import { useState, useMemo, useEffect, Fragment } from "react";
 import { Notification } from "@/types";
 
@@ -59,7 +59,8 @@ export function AdminDashboard() {
     addMessage, currentUser, setCurrentUser, vanStocks, 
     notifications, markNotificationsAsRead, updateZones, zones,
     initSentinel, securityIncidents,
-    addNotification, schedules, transferVanStock, simulateClientTracking
+    addNotification, schedules, transferVanStock, simulateClientTracking,
+    currentProfileClient, setProfileClient, activeCalls, clients
   } = useStore();
   const [selectedIntervention, setSelectedIntervention] = useState<Intervention | null>(null);
   const [isGlobalPlanningOpen, setIsGlobalPlanningOpen] = useState(false);
@@ -84,6 +85,27 @@ export function AdminDashboard() {
   const [isValidationOpen, setIsValidationOpen] = useState(false);
   const [runningCampaigns, setRunningCampaigns] = useState<string[]>(['google_sniper']); // Google Sniper active by default for demo
   const [isMobile, setIsMobile] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [simulationPhone, setSimulationPhone] = useState("");
+  const [isSimulating, setIsSimulating] = useState(false);
+
+  const handleSimulateCall = async () => {
+    if (!simulationPhone) return;
+    setIsSimulating(true);
+    try {
+      await fetch('/api/call-webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: simulationPhone })
+      });
+      setToast({ message: "Appel simulé avec succès !", type: 'success' });
+      setSimulationPhone("");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSimulating(false);
+    }
+  };
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -102,10 +124,7 @@ export function AdminDashboard() {
   // Real-time Security Monitoring (Sentinel)
   useEffect(() => {
     initSentinel();
-    if (useStore.getState().interventions.length === 0) {
-      useStore.getState().seedData();
-    }
-  }, []);
+  }, [initSentinel]);
 
   const generateAISuggestion = async () => {
     setIsAnalyzing(true);
@@ -180,11 +199,6 @@ export function AdminDashboard() {
 
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
-  const [isPhoneHubOpen, setIsPhoneHubOpen] = useState(false);
-  const [currentCallNumber, setCurrentCallNumber] = useState("");
-  const [voipMode, setVoipMode] = useState<'dialer' | 'intercom' | 'assistance'>('dialer');
-  const [isRadioActive, setIsRadioActive] = useState(false);
-  const [transcription, setTranscription] = useState<{role: 'tech' | 'client', text: string}[]>([]);
   
   const [marketIntel] = useState([
     { name: 'Serrurier Express 67', status: 'aggressive', ads: 12, topAbs: '45%' },
@@ -226,39 +240,6 @@ export function AdminDashboard() {
   }, []);
 
   
-  const { makeCall, endCall, status: twilioStatus, isInitialized: isTwilioReady, callerName, errorStatus, isSimulated } = useTwilioVoice();
-  
-  // Dynamic call status based on Twilio + Local override
-  const [localCallStatus, setLocalCallStatus] = useState<'idle' | 'dialing' | 'connected' | 'incoming'>('idle');
-  const callStatus = twilioStatus === 'dialing' ? 'dialing' : 
-                    twilioStatus === 'connected' ? 'connected' : 
-                    twilioStatus === 'incoming' ? 'incoming' : localCallStatus;
-
-  // Live Transcription Simulation
-  useEffect(() => {
-    if (callStatus === 'connected') {
-      const phrases = [
-        { role: 'tech', text: 'Bonjour, Serrurerie Alsacienne à votre service.' },
-        { role: 'client', text: 'Bonjour, je suis bloquée devant chez moi au 15 Quai des Bateliers.' },
-        { role: 'tech', text: 'Très bien, je vois que vous êtes près du Centre. Un technicien arrive dans 15min.' },
-        { role: 'client', text: 'Merci beaucoup, c\'est urgent car j\'ai laissé le feu allumé.' }
-      ];
-      
-      let i = 0;
-      const interval = setInterval(() => {
-        if (i < phrases.length) {
-          // @ts-ignore
-          setTranscription(prev => [...prev, phrases[i]]);
-          i++;
-        } else {
-          clearInterval(interval);
-        }
-      }, 3000);
-      return () => clearInterval(interval);
-    } else {
-      setTranscription([]);
-    }
-  }, [callStatus]);
 
   // Debounced address search
   useEffect(() => {
@@ -314,11 +295,13 @@ export function AdminDashboard() {
     setLastWaitingCount(waitingCount);
   }, [interventions, lastWaitingCount]);
 
-  const calculateIntTotal = (int: Intervention) => {
+  const calculateIntTotal = (int: Intervention | null) => {
+    if (!int) return 0;
     return calculatePriceBreakdown(int, inventory).total;
   };
 
-  const getPriceBreakdown = (int: Intervention) => {
+  const getPriceBreakdown = (int: Intervention | null) => {
+    if (!int) return { labor: 0, partsTotal: 0, emergencySurcharge: 0, commercialDiscount: 0, total: 0 };
     return calculatePriceBreakdown(int, inventory);
   };
 
@@ -475,8 +458,8 @@ export function AdminDashboard() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="h-full glass bg-white/70 border-white/40 rounded-[2.5rem] flex flex-col shadow-2xl backdrop-blur-3xl pointer-events-auto border border-white/20 overflow-hidden"
             >
-              <div className="p-5 border-b border-black/5 bg-white/40">
-                <div className="flex justify-between items-center mb-5">
+              <div className="p-5 border-b border-black/5 bg-white/40 space-y-4">
+                <div className="flex justify-between items-center">
                   <div>
                     <h2 className="text-2xl font-black tracking-tighter uppercase leading-none">Missions</h2>
                     <p className="text-2xs font-black text-muted-foreground uppercase tracking-widest mt-1">
@@ -487,36 +470,59 @@ export function AdminDashboard() {
                     <Badge className="bg-primary/10 text-primary border-none text-2xs font-black px-3 py-1 rounded-full">
                       {todaysInterventions.length} OPÉRATIONS
                     </Badge>
-                    {isMobile && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setIsLeftSidebarOpen(false)}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
                   </div>
                 </div>
 
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
+                  <Input 
+                    placeholder="TROUVER UN CLIENT OU FICHE..."
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    className="pl-9 h-11 bg-black/5 border-none rounded-xl text-2xs font-black placeholder:text-muted-foreground/30 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all uppercase tracking-widest"
+                  />
+                  
+                  {customerSearch.length > 1 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 p-2 bg-white/95 backdrop-blur-xl border border-black/5 rounded-2xl shadow-xl z-50">
+                      {clients.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone?.includes(customerSearch)).slice(0, 5).map(client => (
+                        <button 
+                          key={client.id}
+                          onClick={() => {
+                            setProfileClient(client);
+                            setCustomerSearch("");
+                          }}
+                          className="w-full p-3 text-left hover:bg-black/5 rounded-xl flex items-center justify-between group transition-all"
+                        >
+                          <div>
+                            <p className="text-2xs font-black uppercase tracking-tight">{client.name}</p>
+                            <p className="text-[10px] font-medium text-muted-foreground opacity-60">{client.address}</p>
+                          </div>
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/20 group-hover:text-primary transition-colors" />
+                        </button>
+                      ))}
+                      {clients.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase())).length === 0 && (
+                        <p className="p-4 text-center text-3xs font-black text-muted-foreground opacity-40 uppercase tracking-widest leading-relaxed">
+                          Aucun client trouvé
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 {todaysInterventions.length === 0 ? (
-                   <div className="py-12 px-6 text-center bg-black/5 rounded-[2.5rem] border border-dashed border-black/10 flex flex-col items-center gap-4">
-                      <div className="p-4 bg-white/50 rounded-full">
-                        <Sparkles className="w-8 h-8 text-primary/40" />
-                      </div>
-                      <div>
-                        <p className="text-2xs font-black uppercase tracking-widest text-muted-foreground mb-2">Aucune mission prévue</p>
-                        <p className="text-3xs font-medium text-muted-foreground/60 leading-relaxed italic">
-                          Initialisez les données de démo pour voir le planning en action.
-                        </p>
-                      </div>
-                      <Button
-                        variant="secondary"
-                        onClick={() => useStore.getState().seedData()}
-                        className="mt-2 rounded-xl bg-white text-3xs font-black uppercase tracking-widest h-10 px-6 border-none shadow-sm active:scale-95 transition-all"
-                      >
-                        Scanner le planning
-                      </Button>
-                   </div>
+                    <div className="py-12 px-6 text-center bg-black/5 rounded-[2.5rem] border border-dashed border-black/10 flex flex-col items-center gap-4">
+                       <div className="p-4 bg-white/50 rounded-full">
+                         <HistoryIcon className="w-8 h-8 text-primary/40" />
+                       </div>
+                       <div>
+                         <p className="text-2xs font-black uppercase tracking-widest text-muted-foreground mb-1">Planning de la journée</p>
+                         <p className="text-3xs font-medium text-muted-foreground/60 leading-relaxed italic">
+                           Aucune mission active pour aujourd'hui.
+                         </p>
+                       </div>
+                    </div>
                 ) : todaysInterventions.map(int => {
                   const isDone = int.status === 'done';
                   const isWaiting = int.status === 'waiting_approval';
@@ -789,13 +795,6 @@ export function AdminDashboard() {
             </Button>
 
 
-             <Button
-                onClick={() => setIsPhoneHubOpen(true)}
-                variant="ghost"
-                className={`${isMobile ? 'h-10 w-10 px-1' : 'h-12 w-12'} rounded-full flex items-center justify-center transition-all group ${isPhoneHubOpen ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'hover:bg-black/5 text-muted-foreground'}`}
-            >
-                <Phone className={`w-5 h-5 ${isPhoneHubOpen ? 'text-white' : 'group-hover:scale-110'} transition-transform`} />
-            </Button>
 
              <Button
                 onClick={() => setIsAccountingHubOpen(true)}
@@ -1055,27 +1054,30 @@ export function AdminDashboard() {
                {selectedIntervention && (
                  <>
                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-white/60 p-3 rounded-2xl border border-black/5">
-                            <p className="text-3xs font-black text-muted-foreground uppercase opacity-50 mb-1">Technicien</p>
-                            <Select 
-                              value={selectedIntervention.tech_id} 
-                              onValueChange={(newTechId) => {
-                                const { updateIntervention } = useStore.getState();
-                                updateIntervention(selectedIntervention.id, { tech_id: newTechId });
-                              }}
-                            >
-                              <SelectTrigger className="h-7 border-none bg-transparent p-0 font-black text-xs focus:ring-0">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-2xl border-none glass ios-shadow">
-                                {users.filter(u => u.role === 'tech').map(tech => (
-                                  <SelectItem key={tech.id} value={tech.id} className="text-xs font-bold rounded-xl focus:bg-primary/5">
-                                    {tech.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                         </div>
+                         <div className="bg-white/60 p-3 rounded-2xl border border-black/5">
+                             <p className="text-3xs font-black text-muted-foreground uppercase opacity-50 mb-1">Collaborateurs</p>
+                             <div className="flex flex-wrap gap-1">
+                                {users.filter(u => u.role === 'tech').map(tech => {
+                                   const isAssigned = selectedIntervention.tech_ids?.includes(tech.id) || selectedIntervention.tech_id === tech.id;
+                                   return (
+                                     <button
+                                       key={tech.id}
+                                       onClick={() => {
+                                         const currentIds = selectedIntervention.tech_ids || (selectedIntervention.tech_id ? [selectedIntervention.tech_id] : []);
+                                         const newIds = currentIds.includes(tech.id) 
+                                           ? currentIds.filter(id => id !== tech.id)
+                                           : [...currentIds, tech.id];
+                                         useStore.getState().updateIntervention(selectedIntervention.id, { tech_ids: newIds });
+                                       }}
+                                       className={`w-6 h-6 rounded-lg text-[10px] font-black flex items-center justify-center transition-all ${isAssigned ? 'bg-primary text-white scale-110 shadow-sm' : 'bg-black/5 text-muted-foreground hover:bg-black/10'}`}
+                                       title={tech.name}
+                                     >
+                                       {tech.name.charAt(0)}
+                                     </button>
+                                   );
+                                })}
+                             </div>
+                          </div>
                         <div className="bg-white/60 p-3 rounded-2xl border border-black/5">
                            <p className="text-3xs font-black text-muted-foreground uppercase opacity-50">Total Estimation</p>
                            <p className="text-sm font-black text-green-600 tracking-tighter">{calculateIntTotal(selectedIntervention)} €</p>
@@ -1170,6 +1172,47 @@ export function AdminDashboard() {
                            </div>
                         </div>
                      )}
+
+                      <div className="space-y-2">
+                         <h3 className="text-3xs font-black uppercase tracking-widest text-muted-foreground ml-1">Suivi au long terme (Historique)</h3>
+                         <div className="bg-white/40 rounded-2xl border border-black/5 p-4 space-y-4">
+                            {selectedIntervention.history?.map((h, idx) => (
+                               <div key={idx} className="flex gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center shrink-0">
+                                     <Clock className="w-4 h-4 text-muted-foreground" />
+                                  </div>
+                                  <div className="flex-1">
+                                     <div className="flex justify-between items-start">
+                                        <p className="text-xs font-black uppercase tracking-tight">{h.tech_name}</p>
+                                        <p className="text-[10px] text-muted-foreground font-medium">{h.date}</p>
+                                     </div>
+                                     <p className="text-xs text-muted-foreground mt-0.5">{h.notes}</p>
+                                  </div>
+                               </div>
+                            ))}
+                            <div className="pt-2">
+                               <Button 
+                                 variant="outline" 
+                                 size="sm" 
+                                 className="w-full rounded-xl text-3xs font-black uppercase tracking-widest bg-black/5 border-none h-9 hover:bg-black/10"
+                                 onClick={() => {
+                                    const note = prompt("Note de suivi pour aujourd'hui :");
+                                    if (note) {
+                                       const newHistory = [...(selectedIntervention.history || []), {
+                                          date: new Date().toLocaleDateString('fr-FR'),
+                                          tech_name: currentUser?.name || "Admin",
+                                          notes: note
+                                       }];
+                                       useStore.getState().updateIntervention(selectedIntervention.id, { history: newHistory });
+                                    }
+                                 }}
+                               >
+                                  <Plus className="w-3 h-3 mr-2" />
+                                  Ajouter un rapport journalier
+                               </Button>
+                            </div>
+                         </div>
+                      </div>
 
                      {/* Document Export Center - Elite Engine */}
                      <div className="bg-black/5 rounded-[2.5rem] p-6 space-y-4 shadow-inner">
@@ -2315,406 +2358,6 @@ export function AdminDashboard() {
          </DialogContent>
        </Dialog>
 
-      {/* 7. PHONE HUB: INTEGRATED VOIP CENTER */}
-      {/* 7. VOIP CENTER: INTEGRATED B2B HUB */}
-      <Dialog open={isPhoneHubOpen} onOpenChange={setIsPhoneHubOpen}>
-        <DialogContent className="max-w-lg w-[95vw] h-[90vh] bg-slate-50/50 backdrop-blur-3xl rounded-[3rem] border-none p-0 overflow-hidden text-slate-900 flex flex-col shadow-[0_40px_100px_rgba(0,0,0,0.3)]">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Centre de Téléphonie VoIP</DialogTitle>
-            <DialogDescription>Gestion des communications entrantes et sortantes Serrurerie Alsacienne OS.</DialogDescription>
-          </DialogHeader>
-
-          <div className="p-8 space-y-8">
-            {/* Header section */}
-            <div className="flex justify-between items-center">
-              <div>
-                <DialogTitle className="text-2xl font-black tracking-tighter uppercase leading-none">Centre VoIP</DialogTitle>
-                <div className="flex items-center gap-2 mt-2">
-                   <div className={`w-2 h-2 rounded-full ${isTwilioReady ? 'bg-green-500 animate-pulse' : isSimulated ? 'bg-blue-400 animate-pulse' : 'bg-orange-500'}`} />
-                   <p className="text-2xs font-black text-indigo-600 uppercase tracking-widest">
-                      {isTwilioReady ? 'Opérationnel - Ligne 1' : isSimulated ? 'Mode Démo (Simulation)' : 'Mode Native (AirDrop/GSM)'}
-                   </p>
-                </div>
-                {errorStatus && !isTwilioReady && (
-                   <p className="text-3xs font-bold text-red-500 uppercase tracking-tight mt-1 bg-red-50 px-2 py-0.5 rounded-md border border-red-100">
-                      Erreur: {errorStatus}
-                   </p>
-                )}
-              </div>
-              <div className={`w-12 h-12 rounded-2xl ${isTwilioReady ? 'bg-indigo-600' : 'bg-slate-200'} flex items-center justify-center text-white shadow-lg`}>
-                <Phone className={`w-6 h-6 ${callStatus !== 'idle' ? 'animate-bounce' : ''} ${!isTwilioReady ? 'text-slate-400' : ''}`} />
-              </div>
-            </div>
-            {/* Tab Navigation */}
-            <div className="flex bg-black/5 p-1 rounded-2xl shrink-0">
-               {[
-                  { id: 'dialer', icon: Keyboard, label: 'Clavier' },
-                  { id: 'intercom', icon: Radio, label: 'Intercom' },
-                  { id: 'assistance', icon: Shield, label: 'SOS Tech' }
-               ].map(tab => (
-                  <button
-                     key={tab.id}
-                     onClick={() => setVoipMode(tab.id as any)}
-                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-2xs font-black uppercase tracking-widest transition-all ${voipMode === tab.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                     <tab.icon className="w-3.5 h-3.5" />
-                     {tab.label}
-                  </button>
-               ))}
-            </div>
-
-            {/* Main Interface Area */}
-            <div className="min-h-[460px] flex flex-col mt-6">
-               <AnimatePresence mode="wait">
-                   {callStatus === 'idle' ? (
-                      <motion.div 
-                         key={voipMode}
-                         initial={{ opacity: 0, x: 20 }}
-                         animate={{ opacity: 1, x: 0 }}
-                         exit={{ opacity: 0, x: -20 }}
-                         className="h-full flex flex-col"
-                      >
-                         {voipMode === 'dialer' && (
-                            <div className="space-y-8">
-                               {/* Number Display */}
-                               <div className="h-16 bg-black/5 rounded-2xl flex items-center px-6 border border-black/5 focus-within:border-indigo-500/30 focus-within:bg-indigo-50/10 transition-all group/display">
-                                  <input 
-                                     type="text"
-                                     value={currentCallNumber}
-                                     onChange={(e) => {
-                                        const val = e.target.value.replace(/[^0-9*#+]/g, '');
-                                        setCurrentCallNumber(val);
-                                     }}
-                                     placeholder="Saisir numéro..."
-                                     className="text-2xl font-black tracking-tighter text-slate-900 w-full bg-transparent border-none outline-none placeholder:text-slate-300"
-                                     autoFocus
-                                  />
-                                  
-                                  <div className="flex items-center gap-1">
-                                     {!currentCallNumber && (
-                                        <button 
-                                           onClick={async () => {
-                                              try {
-                                                 const text = await navigator.clipboard.readText();
-                                                 const cleanText = text.replace(/[^0-9*#+]/g, '');
-                                                 setCurrentCallNumber(cleanText);
-                                              } catch (err) {
-                                                 console.error("Failed to read clipboard:", err);
-                                              }
-                                           }}
-                                           className="p-2 hover:bg-black/5 rounded-xl transition-colors shrink-0 text-indigo-600/50 hover:text-indigo-600"
-                                           title="Coller depuis le presse-papier"
-                                        >
-                                           <ClipboardCheck className="w-5 h-5" />
-                                        </button>
-                                     )}
-                                     
-                                     {currentCallNumber.length > 0 && (
-                                        <button 
-                                          onClick={() => setCurrentCallNumber(prev => prev.slice(0, -1))}
-                                          onContextMenu={(e) => {
-                                             e.preventDefault();
-                                             setCurrentCallNumber("");
-                                          }}
-                                          className="p-2 hover:bg-black/5 rounded-xl transition-colors shrink-0 group relative"
-                                          title="Appui long pour tout effacer"
-                                        >
-                                          <Delete className="w-5 h-5 text-slate-400 group-hover:text-red-500 transition-colors" />
-                                        </button>
-                                     )}
-                                  </div>
-                               </div>
-
-                               {/* Keypad */}
-                               <div className="grid grid-cols-3 gap-3 md:gap-4 flex-1 content-center px-4">
-                                  {[
-                                     { n: '1', l: '' }, { n: '2', l: 'ABC' }, { n: '3', l: 'DEF' },
-                                     { n: '4', l: 'GHI' }, { n: '5', l: 'JKL' }, { n: '6', l: 'MNO' },
-                                     { n: '7', l: 'PQRS' }, { n: '8', l: 'TUV' }, { n: '9', l: 'WXYZ' },
-                                     { n: '*', l: '' }, { n: '0', l: '+' }, { n: '#', l: '' }
-                                  ].map((item) => (
-                                     <button 
-                                        key={item.n}
-                                        onClick={() => setCurrentCallNumber(prev => prev + item.n)}
-                                        onContextMenu={(e) => {
-                                           if (item.n === '0') {
-                                              e.preventDefault();
-                                              setCurrentCallNumber(prev => prev.endsWith('+') ? prev : prev + '+');
-                                           }
-                                        }}
-                                         className="h-14 md:h-16 rounded-2xl bg-white border border-black/5 flex flex-col items-center justify-center transition-all hover:bg-indigo-50 hover:border-indigo-200 active:scale-95 group shadow-sm hover:shadow-md"
-                                        title={item.n === '0' ? "Clic droit pour +" : ""}
-                                     >
-                                         <span className="text-xl md:text-2xl font-black text-slate-800 group-hover:text-indigo-600 leading-none mb-0.5">{item.n}</span>
-                                         {item.l && <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{item.l}</span>}
-                                     </button>
-                                  ))}
-                               </div>
-
-                               <Button 
-                                  className="w-full h-14 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-600/20 active:scale-95 border-none mt-4"
-                                  onClick={() => {
-                                     if (currentCallNumber) {
-                                        makeCall(currentCallNumber);
-                                        setLocalCallStatus('dialing');
-                                     }
-                                  }}
-                               >
-                                  <PhoneCall className="w-4 h-4 mr-3" /> Appeler
-                               </Button>
-                            </div>
-                         )}
-
-                         {voipMode === 'intercom' && (
-                            <div className="space-y-6 flex flex-col h-full">
-                               <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
-                                  <div className="relative z-10 flex flex-col items-center py-4">
-                                     <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mb-4 relative">
-                                        {isRadioActive && (
-                                           <>
-                                              <motion.div 
-                                                 animate={{ scale: [1, 2], opacity: [0.5, 0] }}
-                                                 transition={{ repeat: Infinity, duration: 2 }}
-                                                 className="absolute inset-0 rounded-full bg-indigo-500"
-                                              />
-                                              <motion.div 
-                                                 animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
-                                                 transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
-                                                 className="absolute inset-0 rounded-full bg-indigo-400"
-                                              />
-                                           </>
-                                        )}
-                                        <Radio className={`w-8 h-8 ${isRadioActive ? 'text-indigo-400 animate-pulse' : 'text-white'}`} />
-                                     </div>
-                                     <h4 className="text-lg font-black tracking-tighter uppercase mb-2">Canal Intercom</h4>
-                                     <Badge className="bg-white/10 text-white border-white/20 px-4 py-1">Strasbourg Cluster</Badge>
-                                  </div>
-                                  <div className="absolute top-4 right-4 flex gap-1">
-                                     <SignalLow className="w-4 h-4 text-white/30" />
-                                     <span className="text-2xs font-bold text-white/30 uppercase">UHF 446.0</span>
-                                  </div>
-                               </div>
-
-                               <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-                                  <p className="text-2xs font-black text-slate-400 uppercase tracking-widest px-4">Techniciens Connectés</p>
-                                  {useStore.getState().users.filter(u => u.role === 'tech' && u.id !== '1').map(tech => (
-                                     <div key={tech.id} className="flex items-center justify-between p-4 rounded-2xl bg-black/5 hover:bg-black-[0.08] transition-colors border border-transparent hover:border-black/5">
-                                        <div className="flex items-center gap-3">
-                                           <div className="relative">
-                                              <div className="w-10 h-10 rounded-xl bg-slate-200 overflow-hidden">
-                                                 <img src={tech.avatar_url} alt={tech.name} className="w-full h-full object-cover" />
-                                              </div>
-                                              <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-green-500 border-2 border-white" />
-                                           </div>
-                                           <div>
-                                              <p className="text-xs font-black text-slate-900">{tech.name}</p>
-                                              <p className="text-3xs font-bold text-slate-500 uppercase tracking-tighter">Disponible • 2.4km</p>
-                                           </div>
-                                        </div>
-                                        <Button variant="ghost" size="icon" className="rounded-xl hover:bg-white shadow-sm" onClick={() => setCurrentCallNumber(tech.phone || "")}>
-                                           <Phone className="w-4 h-4 text-indigo-600" />
-                                        </Button>
-                                     </div>
-                                  ))}
-                               </div>
-
-                               <button 
-                                  onMouseDown={() => {
-                                     setIsRadioActive(true);
-                                     // Play PTT START sound effect logic here if needed
-                                  }}
-                                  onMouseUp={() => setIsRadioActive(false)}
-                                  onTouchStart={() => setIsRadioActive(true)}
-                                  onTouchEnd={() => setIsRadioActive(false)}
-                                  className={`w-full py-8 rounded-[2rem] flex flex-col items-center justify-center transition-all active:scale-95 select-none ${isRadioActive ? 'bg-indigo-600 shadow-2xl shadow-indigo-600/40 text-white' : 'bg-slate-900 text-white'}`}
-                               >
-                                  <Mic className={`w-8 h-8 mb-3 ${isRadioActive ? 'animate-bounce' : ''}`} />
-                                  <span className="text-xs font-black uppercase tracking-[0.2em]">{isRadioActive ? 'EN ÉMISSION...' : 'Appuyer pour parler'}</span>
-                                  <p className="text-3xs font-bold opacity-40 mt-2">WALKIE-TALKIE MODE (PTT)</p>
-                               </button>
-                            </div>
-                         )}
-
-                         {voipMode === 'assistance' && (
-                            <div className="space-y-6 flex flex-col h-full animate-in fade-in duration-500">
-                               <div className="bg-red-50 border border-red-100 rounded-[2.5rem] p-8 text-center">
-                                  <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mx-auto mb-4 text-white animate-pulse">
-                                     <AlertTriangle className="w-8 h-8" />
-                                  </div>
-                                  <h4 className="text-xl font-black text-red-900 uppercase tracking-tighter mb-2">Renfort Urgent</h4>
-                                  <p className="text-xs text-red-700 font-medium">Besoin d'aide immédiate sur une intervention ?</p>
-                               </div>
-
-                               <div className="flex-1 space-y-4">
-                                  <p className="text-2xs font-black text-slate-400 uppercase tracking-widest px-4">Interventions complexes</p>
-                                  <div className="grid grid-cols-2 gap-4">
-                                     <button className="p-6 rounded-2xl bg-white border border-slate-200 hover:border-red-500 transition-all text-center group">
-                                        <Users className="w-6 h-6 mx-auto mb-3 text-slate-400 group-hover:text-red-500" />
-                                        <p className="text-2xs font-black uppercase tracking-tighter">Ouverture Difficile</p>
-                                     </button>
-                                     <button className="p-6 rounded-2xl bg-white border border-slate-200 hover:border-red-500 transition-all text-center group">
-                                        <Truck className="w-6 h-6 mx-auto mb-3 text-slate-400 group-hover:text-red-500" />
-                                        <p className="text-2xs font-black uppercase tracking-tighter">Transport Lourd</p>
-                                     </button>
-                                  </div>
-                               </div>
-
-                               <Button 
-                                  className="w-full h-20 bg-red-600 hover:bg-red-700 text-white rounded-[2rem] font-black uppercase text-sm tracking-[0.2em] shadow-xl shadow-red-600/20 active:scale-95 border-none"
-                                  onClick={() => {
-                                     // Broadcast SOS to all nearby techs
-                                     addNotification({
-                                        type: 'error',
-                                        title: '🚨 ALERTE SOS TECH',
-                                        message: 'Un collègue demande du renfort immédiat sur le secteur Strasbourg Centre.'
-                                     });
-                                  }}
-                                >
-                                  Diffuser l'Alerte SOS
-                               </Button>
-                               <p className="text-3xs font-bold text-slate-400 text-center uppercase tracking-widest pb-4">Cela notifiera tous les techniciens à moins de 10km</p>
-                            </div>
-                         )}
-                      </motion.div>
-                   ) : (
-                     <motion.div 
-                        key="active-call"
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="space-y-8 flex flex-col items-center py-6"
-                     >
-                        {/* Call Status Card */}
-                        <div className="w-full bg-indigo-600 rounded-[2.5rem] p-8 text-white text-center shadow-2xl shadow-indigo-600/20 relative overflow-hidden">
-                           <motion.div 
-                              animate={{ 
-                                 scale: [1, 1.2, 1],
-                                 opacity: [0.1, 0.3, 0.1]
-                              }}
-                              transition={{ repeat: Infinity, duration: 2 }}
-                              className="absolute inset-0 bg-white"
-                           />
-                           <div className="relative z-10 space-y-4">
-                              <div className="w-20 h-20 bg-white/20 rounded-full mx-auto flex items-center justify-center backdrop-blur-md">
-                                 {callerName ? (
-                                    <span className="text-3xl font-black">{(callerName as string).charAt(0)}</span>
-                                 ) : (
-                                    <UserCircle className="w-10 h-10" />
-                                 )}
-                              </div>
-                              <h3 className="text-2xl font-black tracking-tighter uppercase leading-none">
-                                 {callStatus === 'incoming' ? (callerName || "Appel Entrant") : currentCallNumber}
-                              </h3>
-                              <p className="text-2xs font-black uppercase tracking-[0.2em] opacity-80">
-                                 {callStatus === 'dialing' ? "Connexion sécurisée..." : "Appel en cours — Ligne 01"}
-                              </p>
-                              {!isTwilioReady && (
-                                 <div className="mt-2 inline-block px-3 py-1 bg-white/10 rounded-full">
-                                    <p className="text-4xs font-black uppercase tracking-[0.1em]">📱 Appel externe (Native Mode)</p>
-                                 </div>
-                              )}
-                           </div>
-                        </div>
-
-                        {/* Live Intelligence Widget */}
-                        <div className="w-full bg-slate-50 rounded-[2rem] border border-black/5 p-6 overflow-hidden">
-                           <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-2">
-                                 <BrainCircuit className="w-4 h-4 text-indigo-600 animate-pulse" />
-                                 <span className="text-2xs font-black uppercase tracking-widest text-slate-900">Live Intelligence AI</span>
-                              </div>
-                              {currentCallNumber.startsWith('+7') && (
-                                 <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-3xs font-black uppercase">Traduction RU ↔ FR Active</Badge>
-                              )}
-                           </div>
-
-                           <div className="space-y-4 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
-                              {transcription.length === 0 ? (
-                                 <p className="text-2xs text-slate-300 font-bold italic text-center py-4">Écoute en cours pour analyse sémantique...</p>
-                              ) : (
-                                 transcription.map((line, idx) => (
-                                    <motion.div 
-                                       key={idx}
-                                       initial={{ opacity: 0, x: -10 }}
-                                       animate={{ opacity: 1, x: 0 }}
-                                       className="flex gap-3"
-                                    >
-                                       <span className={`text-3xs font-black uppercase shrink-0 w-10 ${line.role === 'tech' ? 'text-indigo-600' : 'text-slate-400'}`}>
-                                          {line.role === 'tech' ? 'Moi' : 'Client'}
-                                       </span>
-                                       <p className="text-2xs font-bold text-slate-700 leading-tight">
-                                          {line.text}
-                                          {currentCallNumber.startsWith('+7') && line.role === 'client' && (
-                                             <span className="block text-3xs text-indigo-500 mt-1 italic">
-                                                [Traduit de : Здравствуйте, я застрял...]
-                                             </span>
-                                          )}
-                                       </p>
-                                    </motion.div>
-                                 ))
-                              )}
-                           </div>
-                           
-                           {/* Contextual Actions */}
-                           {transcription.some(t => t.text.includes('urgent') || t.text.includes('bloquée')) && (
-                              <motion.div 
-                                 initial={{ opacity: 0, y: 10 }}
-                                 animate={{ opacity: 1, y: 0 }}
-                                 className="mt-4 pt-4 border-t border-black/5"
-                              >
-                                 <div className="flex gap-2">
-                                    <Button size="sm" variant="outline" className="h-7 text-3xs font-black uppercase tracking-tighter rounded-full border-red-200 text-red-600 hover:bg-red-50">Priorité Urgente</Button>
-                                    <Button size="sm" variant="outline" className="h-7 text-3xs font-black uppercase tracking-tighter rounded-full border-indigo-200 text-indigo-600 hover:bg-indigo-50">Localiser Bateliers</Button>
-                                 </div>
-                              </motion.div>
-                           )}
-                        </div>
-
-                        {/* Controls Grid */}
-                        <div className="grid grid-cols-3 gap-6 w-full">
-                           {[
-                              { icon: MicOff, label: 'Muet', color: 'bg-black/5 text-slate-600' },
-                              { icon: Keyboard, label: 'Clavier', color: 'bg-black/5 text-slate-600' },
-                              { icon: Volume2, label: 'H-Parleur', color: 'bg-indigo-50 text-indigo-600 shadow-sm shadow-indigo-500/10' },
-                              { icon: Plus, label: 'Fusionner', color: 'bg-black/5 text-slate-600' },
-                              { icon: Video, label: 'B2B Meet', color: 'bg-black/5 text-slate-600' },
-                              { icon: RotateCcw, label: 'Transférer', color: 'bg-black/5 text-slate-600' }
-                           ].map((ctrl, i) => (
-                              <div key={i} className="flex flex-col items-center gap-2">
-                                 <button className={`w-12 h-12 md:w-14 md:h-14 ${ctrl.color} rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 border border-black/5 shadow-sm`}>
-                                    <ctrl.icon className="w-5 h-5 md:w-6 h-6" />
-                                 </button>
-                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{ctrl.label}</span>
-                              </div>
-                           ))}
-                        </div>
-
-                        {/* Hang up Button */}
-                        <Button 
-                           className="w-full h-16 bg-red-500 text-white rounded-[1.5rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-red-500/20 active:scale-95 border-none mt-4"
-                           onClick={() => {
-                              endCall();
-                              setLocalCallStatus('idle');
-                              setCurrentCallNumber("");
-                           }}
-                        >
-                           <X className="w-5 h-5 mr-3" /> Mettre Fin à la Session
-                        </Button>
-                     </motion.div>
-                  )}
-               </AnimatePresence>
-            </div>
-          </div>
-          
-          {/* Footer Bar */}
-          <div className="bg-black/5 p-4 flex justify-between items-center border-t border-black/5">
-             <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                <span className="text-3xs font-black text-slate-500 uppercase tracking-widest">Poste 05 - Chiffré AES</span>
-             </div>
-             <p className="text-3xs font-black text-slate-400 uppercase tracking-widest">Twilio Engine 4.0</p>
-          </div>
-        </DialogContent>
-      </Dialog>
 
 
       {/* 5. Dialog: Édition de Planning */}
@@ -2868,6 +2511,38 @@ export function AdminDashboard() {
                </div>
 
                <div className="space-y-3">
+                  <Button 
+                    onClick={() => window.location.href = '/api/auth/google'}
+                    className="w-full h-12 bg-white border border-black/5 text-black rounded-2xl font-black uppercase text-2xs tracking-widest hover:bg-black/5 shadow-sm flex items-center justify-center gap-3"
+                  >
+                    <Mail className="w-4 h-4 text-red-500" /> 
+                    Link Gmail Business Account
+                  </Button>
+
+                  <div className="bg-black/5 rounded-[2rem] p-6 border border-black/5 space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Phone className="w-4 h-4 text-indigo-600" />
+                      <h3 className="text-xs font-black uppercase tracking-widest">Simulateur d'Appel (Demo)</h3>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="Numéro (ex: 0612345678)" 
+                        value={simulationPhone}
+                        onChange={(e) => setSimulationPhone(e.target.value)}
+                        className="h-11 rounded-xl bg-white border-black/5 text-xs"
+                      />
+                      <Button 
+                        onClick={handleSimulateCall}
+                        disabled={isSimulating}
+                        className="h-11 px-4 bg-indigo-600 text-white rounded-xl font-black uppercase text-3xs tracking-widest active:scale-95 transition-all"
+                      >
+                        {isSimulating ? "..." : "Simuler"}
+                      </Button>
+                    </div>
+                    <p className="text-[10px] font-medium text-muted-foreground italic px-1">
+                      Utilisez un numéro client existant pour voir sa fiche apparaître automatiquement.
+                    </p>
+                  </div>
                   <Button variant="outline" className="w-full h-12 rounded-2xl border-black/5 font-black uppercase text-2xs tracking-widest">
                     <Download className="w-4 h-4 mr-2" /> Exporter Logs Logistiques
                   </Button>
@@ -2907,6 +2582,57 @@ export function AdminDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* 8. CRM & Call Popups Layer */}
+      <AnimatePresence>
+        {currentProfileClient && (
+          <div className="fixed inset-0 z-[100] flex justify-end">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setProfileClient(null)}
+              className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            />
+            <CustomerProfile 
+              client={currentProfileClient} 
+              onClose={() => setProfileClient(null)} 
+            />
+          </div>
+        )}
+      </AnimatePresence>
+
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[110] pointer-events-none">
+        <AnimatePresence>
+          {activeCalls.filter(c => c.status === 'ringing').map(call => (
+             <motion.div 
+              key={call.id}
+              initial={{ y: 50, opacity: 0, scale: 0.9 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.9 }}
+              className="glass-dark bg-black/90 text-white p-4 rounded-3xl shadow-2xl flex items-center gap-4 pointer-events-auto mb-2 pr-6"
+             >
+                <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center animate-pulse">
+                  <Phone className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Appel Entrant</p>
+                  <h3 className="text-lg font-black tracking-tighter">{call.clientName}</h3>
+                  <p className="text-2xs font-medium opacity-50">{call.phoneNumber}</p>
+                </div>
+                <Button 
+                  onClick={() => {
+                    const client = clients.find(c => c.id === call.clientId);
+                    if (client) setProfileClient(client);
+                  }}
+                  className="ml-4 h-11 bg-white text-black hover:bg-white/90 rounded-xl text-3xs font-black uppercase tracking-widest px-6"
+                >
+                  Voir Fiche
+                </Button>
+             </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
     </div>
   );
 }

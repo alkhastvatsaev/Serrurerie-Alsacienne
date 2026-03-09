@@ -36,14 +36,7 @@ export function LoginScreen() {
             alert("🔔 SMS REÇU \n\nVotre code de sécurité Serrurerie Alsacienne OS est : 1234");
         }, 500);
       } else {
-        // If no users loaded yet, maybe we need to seed?
-        if (users.length === 0) {
-           setError("Base de données vide. Initialisation...");
-           seedData();
-           setTimeout(() => setError("Données initialisées. Réessayez."), 2000);
-        } else {
-           setError("Numéro non reconnu dans l'annuaire Serrurerie Alsacienne.");
-        }
+        setError("Numéro non reconnu dans l'annuaire Serrurerie Alsacienne.");
       }
       setIsLoading(false);
     }, 1000);
