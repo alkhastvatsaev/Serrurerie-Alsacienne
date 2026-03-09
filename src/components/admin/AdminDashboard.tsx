@@ -907,16 +907,19 @@ export function AdminDashboard() {
              <div className="space-y-1 px-1">
                 <p className="text-3xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-2 ml-1">Outils Administration</p>
                 <div className="grid grid-cols-2 gap-3">
-                    {[
-                        { label: 'Team', icon: Users, desc: 'Gestion Équipes', color: 'text-indigo-500' },
-                        { label: 'IA Engine', icon: BrainCircuit, desc: 'Config Dispatch', color: 'text-purple-500' },
-                        { label: 'Rapports', icon: FileText, desc: 'Exports Data', color: 'text-blue-500' },
-                        { label: 'Sécurité', icon: ShieldCheck, desc: 'Accès & Logs', color: 'text-green-500' }
+                     {[
+                        { label: 'Team', icon: Users, desc: 'Gestion Équipes', color: 'text-indigo-500', action: () => alert('Gestion Équipes (Demo)') },
+                        { label: 'IA & CRM', icon: BrainCircuit, desc: 'Gmail & Appels', color: 'text-purple-500', action: () => setIsTelemetryOpen(true) },
+                        { label: 'Rapports', icon: FileText, desc: 'Exports Data', color: 'text-blue-500', action: () => alert('Rapports (Demo)') },
+                        { label: 'Sécurité', icon: ShieldCheck, desc: 'Accès & Logs', color: 'text-green-500', action: () => alert('Sécurité (Demo)') }
                     ].map((item, idx) => (
                     <button
                         key={idx}
                         className="p-4 rounded-[2rem] bg-white border border-black/5 hover:border-primary/20 hover:bg-primary/[0.02] flex flex-col items-start gap-2 shadow-sm transition-all active:scale-[0.97]"
-                        onClick={() => alert(`Accès à ${item.desc} (Demo Mode)`)}
+                        onClick={() => {
+                          item.action();
+                          setIsAdminMenuOpen(false);
+                        }}
                     >
                         <div className={`p-2 rounded-xl bg-secondary/30 ${item.color}`}>
                             <item.icon className="w-5 h-5" />
