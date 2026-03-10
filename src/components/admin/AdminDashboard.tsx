@@ -31,6 +31,7 @@ import { findTechForLocation } from "@/lib/geo-utils";
 import { calculatePriceBreakdown, formatPrice } from "@/lib/pricing";
 import dynamic from "next/dynamic";
 import { CustomerProfile } from "./CustomerProfile";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { useState, useMemo, useEffect, Fragment, useRef } from "react";
 import { Notification } from "@/types";
 
@@ -2563,7 +2564,8 @@ export function AdminDashboard() {
                     key={client.id}
                     onClick={() => {
                         setProfileClient(client);
-                        setIsCRMOpen(false);
+                        // Delay closing the dialog slightly to prevent unmount clashes
+                        setTimeout(() => setIsCRMOpen(false), 50);
                     }}
                     className="py-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors group px-2 -mx-2 rounded-lg"
                   >
@@ -2832,10 +2834,12 @@ export function AdminDashboard() {
               onClick={() => setProfileClient(null)}
               className="absolute inset-0 bg-black/20 backdrop-blur-sm"
             />
-            <CustomerProfile 
-              client={currentProfileClient} 
-              onClose={() => setProfileClient(null)} 
-            />
+            <ErrorBoundary>
+              <CustomerProfile 
+                client={currentProfileClient} 
+                onClose={() => setProfileClient(null)} 
+              />
+            </ErrorBoundary>
           </div>
         )}
       </AnimatePresence>
