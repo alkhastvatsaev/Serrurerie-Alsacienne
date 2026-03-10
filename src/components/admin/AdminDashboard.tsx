@@ -2820,8 +2820,10 @@ export function AdminDashboard() {
                   <Phone className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Appel Entrant</p>
-                  <h3 className="text-lg font-black tracking-tighter">{call.clientName}</h3>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                    Appel à {call.timestamp ? (typeof call.timestamp === 'string' ? call.timestamp.split('T')[1]?.substring(0, 5) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  <h3 className="text-lg font-black tracking-tighter">{call.clientName || "Inconnu"}</h3>
                   <p className="text-2xs font-medium opacity-50">{call.phoneNumber}</p>
                 </div>
                 <div className="flex flex-col gap-2 ml-4">
