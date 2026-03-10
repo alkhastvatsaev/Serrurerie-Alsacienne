@@ -545,9 +545,21 @@ export const useStore = create<AppState>()((set, get) => ({
             // Auto-open profile if it's a new ringing call
             const latestCall = calls[0];
             if (latestCall && latestCall.status === 'ringing') {
-              const client = get().clients.find(c => c.id === latestCall.clientId);
-              if (client) {
-                set({ currentProfileClient: client });
+              // Prevents double notification for the same call ID
+              const lastNotifiedCallId = (window as any)._lastNotifiedCallId;
+              if (lastNotifiedCallId !== latestCall.id) {
+                (window as any)._lastNotifiedCallId = latestCall.id;
+                
+                get().addNotification({
+                  type: 'tech',
+                  title: '📞 Appel Entrant',
+                  message: `${latestCall.clientName || 'Inconnu'} (${latestCall.phoneNumber})`
+                });
+
+                const client = get().clients.find(c => c.id === latestCall.clientId);
+                if (client) {
+                   set({ currentProfileClient: client });
+                }
               }
             }
           });

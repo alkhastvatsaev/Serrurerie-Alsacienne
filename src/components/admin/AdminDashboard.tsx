@@ -95,15 +95,17 @@ export function AdminDashboard() {
     if (!simulationPhone) return;
     setIsSimulating(true);
     try {
-      await fetch('/api/call-webhook', {
+      const response = await fetch('/api/call-webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber: simulationPhone })
       });
-      setToast({ message: "Appel simulé avec succès !", type: 'success' });
+      const data = await response.json();
+      setToast({ message: data.success ? `Simulation réussie : ${data.clientName}` : "Erreur simulation", type: data.success ? 'success' : 'info' });
       setSimulationPhone("");
     } catch (e) {
       console.error(e);
+      setToast({ message: "Échec de connexion au serveur", type: 'info' });
     } finally {
       setIsSimulating(false);
     }
@@ -927,7 +929,7 @@ export function AdminDashboard() {
                         { label: 'Team', icon: Users, desc: 'Techniciens', color: 'text-indigo-500', action: () => setIsGlobalPlanningOpen(true) },
                         { label: 'CRM', icon: Search, desc: 'Base Clients', color: 'text-purple-500', action: () => setIsCRMOpen(true) },
                         { label: 'Rapports', icon: FileText, desc: 'Exports PDF', color: 'text-blue-500', action: () => setIsValidationOpen(true) },
-                        { label: 'IA Tech', icon: BrainCircuit, desc: 'Système', color: 'text-green-500', action: () => setIsTelemetryOpen(true) }
+                        { label: 'Diagnostic', icon: Activity, desc: 'Webhooks & Appels', color: 'text-orange-500', action: () => setIsTelemetryOpen(true) }
                     ].map((item, idx) => (
                     <button
                         key={idx}
@@ -1328,7 +1330,7 @@ export function AdminDashboard() {
         <DialogContent className="w-[100vw] h-[100vh] max-w-none max-h-none m-0 p-0 rounded-none border-none bg-[#F8F9FB] flex flex-col overflow-hidden font-sans">
             <DialogHeader className="sr-only">
               <DialogTitle>Planning Global Stratégique</DialogTitle>
-              <DialogDescription>Vue d'ensemble mensuelle de la planification des techniciens et de la couverture opérationnelle.</DialogDescription>
+              <DialogDescription>Vue d'overview mensuelle de la planification des techniciens et de la couverture opérationnelle.</DialogDescription>
             </DialogHeader>
             {/* Header / Management Toolbar */}
             <div className="p-6 md:p-8 border-b border-black/5 bg-white shrink-0">
