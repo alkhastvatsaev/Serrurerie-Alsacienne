@@ -535,8 +535,10 @@ export const useStore = create<AppState>()((set, get) => ({
             const calls = snapshot.docs
               .map(doc => ({ id: doc.id, ...doc.data() } as ActiveCall))
               .filter(call => {
-                if (!call.timestamp) return false;
-                const callTime = call.timestamp?.toMillis ? call.timestamp.toMillis() : (typeof call.timestamp === 'number' ? call.timestamp : now);
+                if (!call.timestamp) return true; // Keep calls that just arrived (timestamp pending)
+                const callTime = typeof call.timestamp === 'number' 
+                  ? call.timestamp 
+                  : (call.timestamp?.toMillis ? call.timestamp.toMillis() : now);
                 return (now - callTime) < 300000; 
               });
 
@@ -559,6 +561,19 @@ export const useStore = create<AppState>()((set, get) => ({
                   const client = get().clients.find(c => c.id === latestCall.clientId);
                   if (client) {
                      set({ currentProfileClient: client });
+                  } else {
+                     // Force open profile even for unknown callers
+                     set({ currentProfileClient: {
+                       id: `temp-${Date.now()}`,
+                       name: latestCall.clientName || 'Nouveau Prospect',
+                       phone: latestCall.phoneNumber,
+                       email: '',
+                       address: 'Inconnue',
+                       type: 'particulier',
+                       contact_info: latestCall.phoneNumber,
+                       created_at: new Date().toISOString(),
+                       activities: []
+                     } as any });
                   }
                 }
               }
