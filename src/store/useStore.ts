@@ -535,8 +535,8 @@ export const useStore = create<AppState>()((set, get) => ({
             const calls = snapshot.docs
               .map(doc => ({ id: doc.id, ...doc.data() } as ActiveCall))
               .filter(call => {
-                // Filter out calls older than 5 minutes (300000ms) to avoid persistent popups
-                const callTime = call.timestamp?.toMillis ? call.timestamp.toMillis() : (call.timestamp || now);
+                if (!call.timestamp) return false;
+                const callTime = call.timestamp?.toMillis ? call.timestamp.toMillis() : (typeof call.timestamp === 'number' ? call.timestamp : now);
                 return (now - callTime) < 300000; 
               });
 
@@ -545,20 +545,21 @@ export const useStore = create<AppState>()((set, get) => ({
             // Auto-open profile if it's a new ringing call
             const latestCall = calls[0];
             if (latestCall && latestCall.status === 'ringing') {
-              // Prevents double notification for the same call ID
-              const lastNotifiedCallId = (window as any)._lastNotifiedCallId;
-              if (lastNotifiedCallId !== latestCall.id) {
-                (window as any)._lastNotifiedCallId = latestCall.id;
-                
-                get().addNotification({
-                  type: 'tech',
-                  title: '📞 Appel Entrant',
-                  message: `${latestCall.clientName || 'Inconnu'} (${latestCall.phoneNumber})`
-                });
+              if (typeof window !== 'undefined') {
+                const lastNotifiedCallId = (window as any)._lastNotifiedCallId;
+                if (lastNotifiedCallId !== latestCall.id) {
+                  (window as any)._lastNotifiedCallId = latestCall.id;
+                  
+                  get().addNotification({
+                    type: 'tech',
+                    title: '📞 Appel Entrant',
+                    message: `${latestCall.clientName || 'Inconnu'} (${latestCall.phoneNumber})`
+                  });
 
-                const client = get().clients.find(c => c.id === latestCall.clientId);
-                if (client) {
-                   set({ currentProfileClient: client });
+                  const client = get().clients.find(c => c.id === latestCall.clientId);
+                  if (client) {
+                     set({ currentProfileClient: client });
+                  }
                 }
               }
             }

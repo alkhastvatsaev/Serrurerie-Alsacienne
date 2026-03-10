@@ -372,7 +372,9 @@ export function AdminDashboard() {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         
         // Setup Audio Analysis for Visualizer
+        if (typeof window === 'undefined') return;
         const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
         const audioContext = new AudioContextClass();
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
@@ -2689,7 +2691,7 @@ export function AdminDashboard() {
           <div className="flex-1 overflow-y-auto max-h-[75vh] p-8 space-y-8 custom-scrollbar">
             <div className="flex justify-between items-center bg-white/50 backdrop-blur-md sticky top-0 z-10 -m-8 mb-6 p-8 border-b border-black/5">
               <div>
-                <DialogTitle className="text-2xl font-black tracking-tighter uppercase leading-none">Console Admin</DialogTitle>
+                <h2 className="text-2xl font-black tracking-tighter uppercase leading-none">Console Admin</h2>
                 <p className="text-2xs font-black text-indigo-600 uppercase tracking-widest mt-1">Serrurerie Alsacienne OS v2.4 - Autonomous Mode</p>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center text-white shadow-2xl">
