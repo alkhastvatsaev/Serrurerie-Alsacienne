@@ -544,7 +544,7 @@ export const useStore = create<AppState>()((set, get) => ({
 
             set({ activeCalls: calls });
             
-            // Auto-open profile if it's a new ringing call
+            // Only trigger notification, do not force open profile anymore (requested by user)
             const latestCall = calls[0];
             if (latestCall && latestCall.status === 'ringing') {
               if (typeof window !== 'undefined') {
@@ -557,24 +557,6 @@ export const useStore = create<AppState>()((set, get) => ({
                     title: '📞 Appel Entrant',
                     message: `${latestCall.clientName || 'Inconnu'} (${latestCall.phoneNumber})`
                   });
-
-                  const client = get().clients.find(c => c.id === latestCall.clientId);
-                  if (client) {
-                     set({ currentProfileClient: client });
-                  } else {
-                     // Force open profile even for unknown callers
-                     set({ currentProfileClient: {
-                       id: `temp-${Date.now()}`,
-                       name: latestCall.clientName || 'Nouveau Prospect',
-                       phone: latestCall.phoneNumber,
-                       email: '',
-                       address: 'Inconnue',
-                       type: 'particulier',
-                       contact_info: latestCall.phoneNumber,
-                       created_at: new Date().toISOString(),
-                       activities: []
-                     } as any });
-                  }
                 }
               }
             }
