@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> **SESSION START : LIRE [CHECKPOINT_SYNC.md](file:///Users/alkhastvatsaev/Desktop/SERRURE/CHECKPOINT_SYNC.md) EN PREMIER.**
+> Ce fichier contient les dernières avancées, ce qui est cassé, et les prochaines étapes.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

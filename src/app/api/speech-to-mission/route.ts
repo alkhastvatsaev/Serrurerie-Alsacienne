@@ -37,18 +37,17 @@ Le manager va te dicter une mission de dépannage. Ta tâche est de parser cette
 
 --- BASE DE CONNAISSANCES SERRURERIE (RÉFÉRENCE) ---
 1. Jargon Technique:
-- Porte & Bâti : Ouvrant, Dormant, Gâche (électrique/répétition), Têtière, Paumelle, Cornière anti-pince, Plat de battement.
-- Serrurerie : Cylindre/Barillet/Canon/Pompe (demi-cylindre, à bouton, s'entrouvrant, organigramme), Serrure en applique, à larder, carénée, Multipoints, Pêne demi-tour/dormant, Protecteur/Rosette.
-- Outils/Méthodes : Radio (porte claquée), Parapluie, Extracteur, Fraise, Bypass.
-- Porte claquée = pêne demi-tour seul (pas verrouillée). Porte fermée à clé = verrouillée.
+- Porte & Bâti : Ouvrant/Vantail, Dormant/Bâti/Huisserie, Gâche (électrique, répétition), Têtière, Paumelle, Gond, Cornière anti-pince, Plat de battement.
+- Serrurerie : Cylindre/Barillet/Canon/Pompe (demi-cylindre, à bouton, s'entrouvrant, organigramme), Serrure en applique, à larder, carénée, Multipoints (3, 5, 7 points), Pêne demi-tour (claquée), Pêne dormant (verrouillée), Protecteur de cylindre, Rosette de sécurité.
+- Outils/Méthodes : Radio (ouverture fine), Parapluie, Extracteur de cylindre, Casse-cylindre, Fraise carbure, Mèche, Bypass, Scie cloche.
 
 2. Marques Incontournables:
-Vachette, Fichet, Bricard, Picard, Pollux, Muel, JPM, Laperche, Kaba, Mottura, Mul-T-Lock, Abus, Heracles.
+Vachette, Fichet (F3D, 787Z), Bricard (Chifral), Picard Serrures (Vak, Diamant), Pollux (clé étoilée), Muel, JPM, Laperche, Kaba, Mottura (double panneton), Mul-T-Lock, Abus, Heracles.
 
-3. Règles Métier & Urgences:
-- Niveau 1 (Absolu) : Bébé enfermé, danger immédiat. (is_emergency: true, social_emergency_type: baby_inside, etc.)
-- Niveau 2 (Urgent) : Client dehors nuit, effraction. (is_emergency: true)
-- Niveau 3 (Normal) : Remplacement de serrure standard, devis.
+3. Logique Métier & Urgences:
+- Niveau 1 (Vital) : Bébé enfermé, casserole sur le feu, personne âgée tombée. (is_emergency: true, social_emergency_type: baby_inside, elderly_person)
+- Niveau 2 (Sécurité) : Client dehors nuit, effraction subie. (is_emergency: true)
+- Niveau 3 (Normal) : Remplacement suite perte de clé, devis blindage. (is_emergency: false)
 --------------------------------------------------
 
 Tu dois corriger les erreurs de syntaxe selon ce lexique professionnel, comprendre le jargon et deviner la catégorie et l'urgence.
@@ -59,7 +58,7 @@ Renvoie UNIQUEMENT un objet JSON valide avec la structure suivante :
   "category": "emergency" | "installation" | "repair" | "maintenance" | "automotive" | "safe" | "access_control",
   "is_emergency": boolean,
   "social_emergency_type": "none" | "baby_inside" | "pet_trapped" | "elderly_person",
-  "description": "string (résumé structuré incluant les outils, matériel demandé et contexte)"
+  "description": "string (résumé structuré incluant les outils, matériel demandé et contexte métier)"
 }`;
 
     const completion = await openai.chat.completions.create({

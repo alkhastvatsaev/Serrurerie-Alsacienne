@@ -67,6 +67,9 @@ interface AppState {
   checkSmartDispatch: (intervention: Intervention) => void;
   // Sentinel
   initSentinel: () => void;
+  addClient: (client: Omit<Client, 'id'>) => Promise<string | undefined>;
+  updateClient: (id: string, updates: Partial<Client>) => Promise<void>;
+  dismissCall: (callId: string) => Promise<void>;
 }
 
 // Helper: Check if point is in polygon (Ray Casting)
@@ -124,6 +127,7 @@ const DUMMY_USERS: User[] = [
 const DUMMY_CLIENTS: Client[] = [
   { id: 'c1', name: 'Immeuble Quai des Bateliers', address: '15 Quai des Bateliers, 67000 Strasbourg', contact_info: '03 88 11 22 33' },
   { id: 'c2', name: 'Résidence de l\'Orangerie', address: '4 Avenue de l\'Europe, 67000 Strasbourg', contact_info: '06 99 88 77 66' },
+  { id: 'user-test', name: 'Alkhast Vatsaev', address: '17 rue seneque, 67200 Strasbourg', phone: '0767693804', email: 'alkhastvatsaev@gmail.com', contact_info: '07 67 69 38 04' },
 ];
 
 const DUMMY_ASSETS: Asset[] = [
@@ -427,6 +431,23 @@ export const useStore = create<AppState>()((set, get) => ({
     notifications: state.notifications.map(n => ({ ...n, read: true }))
   })),
 
+  dismissCall: async (callId: string) => {
+    try {
+        const { db } = await import('@/lib/firebase');
+        const { doc, updateDoc, deleteDoc } = await import('firebase/firestore');
+        const callRef = doc(db, 'active_calls', callId);
+        await updateDoc(callRef, { status: 'missed' });
+        // Optionally delete it to be clean
+        setTimeout(async () => {
+            try {
+              await deleteDoc(callRef);
+            } catch(e) {}
+        }, 5000);
+    } catch (e) {
+        console.error("Error dismissing call:", e);
+    }
+  },
+
       uploadImage: async (file, path) => {
         try {
           // Fallback if we are in a demo mode or disconnected
@@ -510,7 +531,15 @@ export const useStore = create<AppState>()((set, get) => ({
         // Special listener for active calls (CRM auto-popup)
         try {
           onSnapshot(query(collection(db, 'active_calls'), orderBy('timestamp', 'desc')), (snapshot) => {
-            const calls = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActiveCall));
+            const now = Date.now();
+            const calls = snapshot.docs
+              .map(doc => ({ id: doc.id, ...doc.data() } as ActiveCall))
+              .filter(call => {
+                // Filter out calls older than 5 minutes (300000ms) to avoid persistent popups
+                const callTime = call.timestamp?.toMillis ? call.timestamp.toMillis() : (call.timestamp || now);
+                return (now - callTime) < 300000; 
+              });
+
             set({ activeCalls: calls });
             
             // Auto-open profile if it's a new ringing call
@@ -671,6 +700,35 @@ export const useStore = create<AppState>()((set, get) => ({
             }
           });
         });
+
+        // 6. Listen for Clients
+        try {
+            onSnapshot(collection(db, 'clients'), (snapshot) => {
+                const clients = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Client));
+                set({ clients });
+            });
+        } catch (e) { console.error("Clients listener error:", e); }
+      },
+
+      addClient: async (client: Omit<Client, 'id'>) => {
+        try {
+          const docRef = await addDoc(collection(db, 'clients'), {
+            ...client,
+            created_at: serverTimestamp()
+          });
+          return docRef.id;
+        } catch (e) {
+          console.error("Error adding client: ", e);
+        }
+      },
+
+      updateClient: async (id: string, updates: Partial<Client>) => {
+        try {
+          const clientRef = doc(db, 'clients', id);
+          await updateDoc(clientRef, updates);
+        } catch (e) {
+          console.error("Error updating client: ", e);
+        }
       },
 
       updateIntervention: async (id, updates) => {

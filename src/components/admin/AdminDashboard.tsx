@@ -17,7 +17,7 @@ import {
     Moon, Zap, CloudRain, ShieldCheck,
     ExternalLink, Globe, MousePointerClick, Search, LineChart, ShieldAlert, Trophy, Star,
     CreditCard, Euro, Wallet, PieChart, Menu, LayoutGrid, TrendingUp, Receipt, Phone, Mail,
-    Mic, Loader2, Square
+    Mic, Loader2, Square, Activity, ArrowRight
 } from "lucide-react";
 import { downloadPDF, sendPDFByEmail } from "@/lib/pdf-service";
 import { exportToCSV } from "@/lib/export-service";
@@ -61,7 +61,8 @@ export function AdminDashboard() {
     notifications, markNotificationsAsRead, updateZones, zones,
     initSentinel, securityIncidents,
     addNotification, schedules, transferVanStock, simulateClientTracking,
-    currentProfileClient, setProfileClient, activeCalls, clients
+    currentProfileClient, setProfileClient, activeCalls, clients, dismissCall,
+    updateIntervention
   } = useStore();
   const [selectedIntervention, setSelectedIntervention] = useState<Intervention | null>(null);
   const [isGlobalPlanningOpen, setIsGlobalPlanningOpen] = useState(false);
@@ -200,6 +201,9 @@ export function AdminDashboard() {
 
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
+  const [isCRMOpen, setIsCRMOpen] = useState(false);
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [newClient, setNewClient] = useState({ firstName: '', lastName: '', address: '', phone: '', email: '' });
   
   const [marketIntel] = useState([
     { name: 'Serrurier Express 67', status: 'aggressive', ads: 12, topAbs: '45%' },
@@ -346,20 +350,46 @@ export function AdminDashboard() {
   // Voice to Mission State
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVocally, setIsProcessingVocally] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   const handleVoiceMission = async () => {
     if (isRecording) {
-      // Stop recording
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
         setIsRecording(false);
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        if (audioContextRef.current) audioContextRef.current.close();
       }
     } else {
-      // Start recording
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Setup Audio Analysis for Visualizer
+        const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+        const audioContext = new AudioContextClass();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 64;
+        source.connect(analyser);
+        
+        audioContextRef.current = audioContext;
+        analyserRef.current = analyser;
+        
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const updateLevel = () => {
+          analyser.getByteFrequencyData(dataArray);
+          const sum = dataArray.reduce((p, c) => p + c, 0);
+          const average = sum / dataArray.length;
+          setAudioLevel(average);
+          animationFrameRef.current = requestAnimationFrame(updateLevel);
+        };
+        updateLevel();
+
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
@@ -409,7 +439,6 @@ export function AdminDashboard() {
             addNotification({ type: 'warning', title: 'Erreur', message: "Impossible d'analyser la voix." });
           } finally {
             setIsProcessingVocally(false);
-            // close stream
             stream.getTracks().forEach(track => track.stop());
           }
         };
@@ -425,96 +454,6 @@ export function AdminDashboard() {
 
   return (
     <div className="fixed inset-0 bg-background overflow-hidden flex flex-col font-sans">
-
-      {/* 0. Notification Center - iPhone Style "Dynamic Island" Arrow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
-          <motion.button
-            whileHover={{ y: 5 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => {
-                setIsNotifCenterOpen(!isNotifCenterOpen);
-                if (!isNotifCenterOpen) markNotificationsAsRead();
-            }}
-            className="mt-2 p-2 px-6 glass bg-white/80 rounded-full border border-black/5 shadow-lg flex items-center gap-3 active:scale-95 transition-all group pointer-events-auto"
-          >
-              <div className="relative">
-                <Bell className={`w-4 h-4 text-primary ${notifications.some(n => !n.read) ? 'animate-bounce' : ''}`} />
-                {notifications.some(n => !n.read) && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-                )}
-              </div>
-              <span className="text-2xs font-black uppercase tracking-widest opacity-70 group-hover:opacity-100 transition-opacity hidden lg:inline">Notifications</span>
-              <span className="text-2xs font-black uppercase tracking-widest opacity-70 lg:hidden">Manager Ops</span>
-              <ChevronDown className={`w-3 h-3 transition-transform duration-500 ${isNotifCenterOpen ? 'rotate-180' : ''}`} />
-          </motion.button>
-
-          
-          <AnimatePresence>
-              {isNotifCenterOpen && (
-                  <motion.div
-                    initial={{ y: -20, opacity: 0, scale: 0.95 }}
-                    animate={{ y: 0, opacity: 1, scale: 1 }}
-                    exit={{ y: -20, opacity: 0, scale: 0.95 }}
-                    className="mt-4 w-[92vw] max-w-md glass-dark bg-white/90 backdrop-blur-3xl rounded-[3rem] border border-white/50 shadow-[0_40px_100px_rgba(0,0,0,0.2)] overflow-hidden pointer-events-auto"
-                  >
-                      <div className="p-6 pb-4 border-b border-black/5 flex justify-between items-center bg-white/40">
-                          <div>
-                              <h3 className="text-xl font-black uppercase tracking-tighter">Activités Live</h3>
-                              <p className="text-3xs font-bold text-muted-foreground uppercase opacity-70 tracking-widest">Temps Réel • Flux Entreprise</p>
-                          </div>
-                          <Badge variant="outline" className="rounded-full px-3 py-1 bg-primary/5 text-primary border-primary/10 text-2xs font-black">
-                              {notifications.length} ALERTES
-                          </Badge>
-                      </div>
-
-                      <div className="max-h-[50vh] overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                          {notifications.length === 0 ? (
-                              <div className="py-16 text-center space-y-3 opacity-30">
-                                  <div className="w-12 h-12 bg-black/5 rounded-full flex items-center justify-center mx-auto">
-                                      <Bell className="w-6 h-6" />
-                                  </div>
-                                  <p className="text-xs font-black uppercase tracking-widest">Aucune notification</p>
-                              </div>
-                          ) : (
-                              notifications.map((n) => (
-                                  <motion.div
-                                    key={n.id}
-                                    layout
-                                    className={`p-4 rounded-[2rem] border transition-all flex gap-4 ${n.read ? 'bg-white/50 border-black/5 grayscale-[0.5]' : 'bg-white border-primary/10 shadow-sm'}`}
-                                  >
-                                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                                          n.type === 'stock' ? 'bg-orange-500/10 text-orange-600' :
-                                          n.type === 'tech' ? 'bg-blue-500/10 text-blue-600' :
-                                          n.type === 'success' ? 'bg-green-500/10 text-green-600' : 'bg-indigo-500/10 text-indigo-600'
-                                      }`}>
-                                          {n.type === 'stock' ? <Package className="w-5 h-5" /> :
-                                           n.type === 'tech' ? <UserCircle className="w-5 h-5" /> :
-                                           n.type === 'success' ? <BadgeEuro className="w-5 h-5" /> : <Info className="w-5 h-5" />}
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                          <div className="flex justify-between items-start mb-1">
-                                              <span className="text-2xs font-black uppercase tracking-tight">{n.title}</span>
-                                              <span className="text-2xs font-medium text-muted-foreground opacity-50">{n.timestamp}</span>
-                                          </div>
-                                          <p className="text-xs text-muted-foreground leading-relaxed font-medium">{n.message}</p>
-                                      </div>
-                                  </motion.div>
-                              ))
-                          )}
-                      </div>
-
-                      <div className="p-4 bg-black/5 text-center">
-                          <button
-                            onClick={() => setIsNotifCenterOpen(false)}
-                            className="text-2xs font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors"
-                          >
-                              Fermer le Centre de Contrôle
-                          </button>
-                      </div>
-                  </motion.div>
-              )}
-          </AnimatePresence>
-      </div>
 
       {/* 1. Fullscreen Map Layer */}
       <div className="absolute inset-0 z-0 bg-secondary/5">
@@ -542,26 +481,45 @@ export function AdminDashboard() {
               <div className="p-5 border-b border-black/5 bg-white/40 space-y-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h2 className="text-2xl font-black tracking-tighter uppercase leading-none">Missions</h2>
+                    <h2 className="text-2xl font-black tracking-tighter uppercase leading-none">Actions Manager</h2>
                     <p className="text-2xs font-black text-muted-foreground uppercase tracking-widest mt-1">
                       {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className="bg-primary/10 text-primary border-none text-2xs font-black px-3 py-1 rounded-full">
-                      {todaysInterventions.length} OPÉRATIONS
+                      {todaysInterventions.filter(i => i.status !== 'done').length} EN COURS
                     </Badge>
                   </div>
                 </div>
 
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
-                  <Input 
-                    placeholder="TROUVER UN CLIENT OU FICHE..."
-                    value={customerSearch}
-                    onChange={(e) => setCustomerSearch(e.target.value)}
-                    className="pl-9 h-11 bg-black/5 border-none rounded-xl text-2xs font-black placeholder:text-muted-foreground/30 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all uppercase tracking-widest"
-                  />
+                <div className="relative group">
+                  <div className="relative flex items-center">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
+                    <Input 
+                      placeholder="TROUVER UN CLIENT OU FICHE..."
+                      value={customerSearch}
+                      onChange={(e) => setCustomerSearch(e.target.value)}
+                      className="pl-9 pr-20 h-11 bg-black/5 border-none rounded-xl text-2xs font-black placeholder:text-muted-foreground/30 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all uppercase tracking-widest w-full"
+                    />
+                    <div className="absolute right-2 flex items-center gap-1.5">
+                      <Button 
+                        onClick={() => setIsCRMOpen(true)}
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-full bg-white shadow-sm border border-black/5 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                      >
+                        <Users className="w-3 h-3" />
+                      </Button>
+                      <Button 
+                        onClick={() => setIsAddClientOpen(true)}
+                        size="icon"
+                        className="h-7 w-7 rounded-full bg-black text-white shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
                   
                   {customerSearch.length > 1 && (
                     <div className="absolute top-full left-0 right-0 mt-2 p-2 bg-white/95 backdrop-blur-xl border border-black/5 rounded-2xl shadow-xl z-50">
@@ -598,9 +556,9 @@ export function AdminDashboard() {
                          <HistoryIcon className="w-8 h-8 text-primary/40" />
                        </div>
                        <div>
-                         <p className="text-2xs font-black uppercase tracking-widest text-muted-foreground mb-1">Planning de la journée</p>
+                         <p className="text-2xs font-black uppercase tracking-widest text-muted-foreground mb-1">Centre d'Actions</p>
                          <p className="text-3xs font-medium text-muted-foreground/60 leading-relaxed italic">
-                           Aucune mission active pour aujourd'hui.
+                           Aucune action requise pour le moment.
                          </p>
                        </div>
                     </div>
@@ -651,31 +609,51 @@ export function AdminDashboard() {
 
                       {!isDone && (
                         <div className="flex items-center gap-2">
-                           {isWaiting && (
-                             <Badge variant="outline" className="h-6 rounded-full border-orange-200 bg-orange-50 text-orange-600 text-3xs font-black px-2 uppercase tracking-tighter">À Valider</Badge>
+                           {isWaiting ? (
+                             <Button
+                              size="sm"
+                              className="h-8 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 text-3xs font-black px-3 uppercase tracking-tighter"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateIntervention(int.id, { status: 'done' });
+                                setToast({ message: 'Intervention validée', type: 'success' });
+                                setTimeout(() => setToast(null), 3000);
+                              }}
+                             >
+                               Valider
+                             </Button>
+                           ) : (
+                             <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all flex items-center justify-center border-none"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const tech = users.find(u => u.id === int.tech_id);
+                                if (tech?.phone) {
+                                  sendWhatsAppMessage(tech.phone, whatsappTemplates.dispatchToTech(tech.name, int));
+                                }
+                              }}
+                            >
+                              <HistoryIcon className="w-4 h-4" />
+                            </Button>
                            )}
-                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 rounded-2xl bg-green-500 text-white shadow-lg shadow-green-500/20 hover:bg-green-600 transition-all flex items-center justify-center border-none"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const tech = users.find(u => u.id === int.tech_id);
-                              if (tech?.phone) {
-                                sendWhatsAppMessage(tech.phone, whatsappTemplates.dispatchToTech(tech.name, int));
-                              }
-                            }}
-                          >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="opacity-100">
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                            </svg>
-                          </Button>
                         </div>
                       )}
 
                       {isDone && (
-                        <div className="p-2 bg-green-500/10 rounded-full">
-                          <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            className="h-8 rounded-xl bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20 text-3xs font-black px-3 uppercase tracking-tighter"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setToast({ message: 'Facture envoyée au client', type: 'success' });
+                              setTimeout(() => setToast(null), 3000);
+                            }}
+                           >
+                             Facturer
+                           </Button>
                         </div>
                       )}
                     </motion.div>
@@ -716,55 +694,35 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 xl:grid-cols-2 gap-4 custom-scrollbar content-start">
                 {users.filter(u => u.role === 'tech').map(tech => (
                   <motion.div
                     key={tech.id}
-                    className="p-4 rounded-[2rem] bg-white border border-black/5 shadow-sm hover:shadow-md transition-all group"
+                    className="p-4 rounded-[2rem] bg-white border border-black/5 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="relative">
-                        <Avatar className="w-10 h-10 border-2 border-white shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="relative shrink-0">
+                        <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
                           <AvatarImage src={tech.avatar_url} />
                           <AvatarFallback className="bg-indigo-100 text-indigo-600 font-black text-xs">{tech.name[0]}</AvatarFallback>
                         </Avatar>
-                        <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${tech.status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${tech.status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                           <h4 className="text-xs font-black uppercase tracking-wider truncate">{tech.name}</h4>
+                           <h4 className="text-sm font-black uppercase tracking-wider truncate">{tech.name}</h4>
                            <Badge className="bg-green-50 text-green-700 border-none text-4xs font-black px-1.5 h-3.5">PRO</Badge>
                         </div>
                         <p className="text-3xs font-bold text-muted-foreground uppercase opacity-70">En service jusqu'à 18:00</p>
                       </div>
                     </div>
 
-                    {/* Management Stats - KPIs */}
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                       <div className="bg-slate-50 p-2 rounded-xl border border-black/5">
-                          <p className="text-4xs font-black text-slate-400 uppercase leading-none mb-1">Charge du Jour</p>
-                          <div className="flex items-end justify-between">
-                             <span className="text-xs font-black">{interventions.filter(i => i.tech_id === tech.id && i.date === today).length} Missions</span>
-                             <div className="w-8 h-1 bg-indigo-100 rounded-full overflow-hidden mb-1">
-                                <div className="h-full bg-indigo-600" style={{ width: `${(interventions.filter(i => i.tech_id === tech.id && i.date === today).length / 5) * 100}%` }} />
-                             </div>
-                          </div>
-                       </div>
-                       <div className="bg-slate-50 p-2 rounded-xl border border-black/5">
-                          <p className="text-4xs font-black text-slate-400 uppercase leading-none mb-1">C.A. (Estimé)</p>
-                          <span className="text-xs font-black text-indigo-600">
-                             {interventions.filter(i => i.tech_id === tech.id && i.date === today && i.status === 'done').reduce((acc, current) => acc + calculateIntTotal(current), 0)} €
-                          </span>
-                       </div>
-                    </div>
-
-                    {/* Work Schedule */}
-                    <div className="mb-4 px-1">
+                    {/* Work Schedule (Minimalist View) */}
+                    <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-3xs font-black uppercase tracking-widest text-slate-400">Présence Hebdomadaire</span>
+                        <span className="text-3xs font-black uppercase tracking-widest text-slate-400">Semaine</span>
                         <div className="flex items-center gap-1 cursor-pointer hover:bg-indigo-50 px-1.5 py-0.5 rounded-lg transition-colors" onClick={() => setIsGlobalPlanningOpen(true)}>
                            <Calendar className="w-2.5 h-2.5 text-indigo-400" />
-                           <span className="text-4xs font-bold text-indigo-500">VOIR TOUT</span>
                         </div>
                       </div>
                       <div className="grid grid-cols-7 gap-1">
@@ -798,32 +756,6 @@ export function AdminDashboard() {
                       </div>
                     </div>
 
-                    {/* Manager Management Actions */}
-                    <div className="flex gap-1.5">
-                       <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="flex-1 h-9 rounded-xl border border-black/5 bg-slate-50/50 hover:bg-slate-100 text-3xs font-black uppercase tracking-widest gap-2"
-                          onClick={() => {
-                            setToast({ message: `Alerte disponibilité envoyée à ${tech.name}`, type: 'info' });
-                            setTimeout(() => setToast(null), 3000);
-                          }}
-                       >
-                          <Bell className="w-3 h-3 text-amber-500" />
-                          Alerte
-                       </Button>
-                       <Button 
-                          size="sm" 
-                          className="flex-1 h-9 rounded-xl bg-black text-white text-3xs font-black uppercase tracking-widest gap-2"
-                          onClick={() => {
-                            setToast({ message: `Planning de ${tech.name} mis à jour`, type: 'success' });
-                            setTimeout(() => setToast(null), 3000);
-                          }}
-                       >
-                          <Save className="w-3 h-3" />
-                          Gérer
-                       </Button>
-                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -853,16 +785,8 @@ export function AdminDashboard() {
             </Button>
 
             <Button
-                onClick={handleVoiceMission}
-                disabled={isProcessingVocally}
-                className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full ${isRecording ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50' : isProcessingVocally ? 'bg-indigo-500 text-white' : 'bg-primary text-white'} font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center border-none ml-2 mr-1`}
-            >
-                {isProcessingVocally ? <Loader2 className="w-5 h-5 animate-spin" /> : isRecording ? <Square className="w-4 h-4 fill-current" /> : <Mic className="w-5 h-5" />}
-            </Button>
-
-            <Button
                 onClick={() => setIsCreateModalOpen(true)}
-                className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full bg-foreground text-background font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center border-none`}
+                className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full bg-foreground text-background font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center border-none ml-2`}
             >
                 <Plus className="w-5 h-5" />
             </Button>
@@ -875,6 +799,8 @@ export function AdminDashboard() {
                 <Users className={`w-5 h-5 ${isRightSidebarOpen ? 'text-white' : 'group-hover:scale-110'} transition-transform`} />
             </Button>
 
+            {/* ROI WAR ROOM button hidden as requested */}
+            {/*
             <Button
                 onClick={() => setIsPublicityHubOpen(true)}
                 variant="ghost"
@@ -882,6 +808,7 @@ export function AdminDashboard() {
             >
                 <Megaphone className={`w-5 h-5 ${isPublicityHubOpen ? 'text-white' : 'group-hover:scale-110'} transition-transform`} />
             </Button>
+            */}
 
 
 
@@ -997,10 +924,10 @@ export function AdminDashboard() {
                 <p className="text-3xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-2 ml-1">Outils Administration</p>
                 <div className="grid grid-cols-2 gap-3">
                      {[
-                        { label: 'Team', icon: Users, desc: 'Gestion Équipes', color: 'text-indigo-500', action: () => alert('Gestion Équipes (Demo)') },
-                        { label: 'IA & CRM', icon: BrainCircuit, desc: 'Gmail & Appels', color: 'text-purple-500', action: () => setIsTelemetryOpen(true) },
-                        { label: 'Rapports', icon: FileText, desc: 'Exports Data', color: 'text-blue-500', action: () => alert('Rapports (Demo)') },
-                        { label: 'Sécurité', icon: ShieldCheck, desc: 'Accès & Logs', color: 'text-green-500', action: () => alert('Sécurité (Demo)') }
+                        { label: 'Team', icon: Users, desc: 'Techniciens', color: 'text-indigo-500', action: () => setIsGlobalPlanningOpen(true) },
+                        { label: 'CRM', icon: Search, desc: 'Base Clients', color: 'text-purple-500', action: () => setIsCRMOpen(true) },
+                        { label: 'Rapports', icon: FileText, desc: 'Exports PDF', color: 'text-blue-500', action: () => setIsValidationOpen(true) },
+                        { label: 'IA Tech', icon: BrainCircuit, desc: 'Système', color: 'text-green-500', action: () => setIsTelemetryOpen(true) }
                     ].map((item, idx) => (
                     <button
                         key={idx}
@@ -1635,16 +1562,67 @@ export function AdminDashboard() {
                 </div>
 
                 {!aiSuggestion && !isAnalyzing && (
-                    <div className="text-center py-2">
-                        <p className="text-2xs text-muted-foreground font-medium mb-3">L&apos;IA peut analyser le trafic et les stocks pour suggérer le meilleur technicien.</p>
-                        <Button 
-                            onClick={generateAISuggestion}
-                            size="sm"
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-xl text-3xs font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20"
-                        >
-                            <BrainCircuit className="w-3 h-3 mr-2" />
-                            Analyser & Suggérer
-                        </Button>
+                    <div className="flex flex-col items-center justify-center py-6 gap-6 min-h-[160px]">
+                        {isRecording ? (
+                          <div className="flex flex-col items-center gap-6 w-full animate-in zoom-in duration-300">
+                             <div className="relative flex items-center justify-center">
+                                <motion.div 
+                                    animate={{ 
+                                        scale: [1, 1.2 + (audioLevel / 100), 1],
+                                        opacity: [0.3, 0.6, 0.3]
+                                    }}
+                                    transition={{ duration: 0.5, repeat: Infinity }}
+                                    className="absolute inset-x-0 inset-y-0 bg-indigo-500 rounded-full blur-2xl"
+                                    style={{ width: 80, height: 80 }}
+                                />
+                                <div className="flex items-center gap-1.5 h-16">
+                                    {[...Array(9)].map((_, i) => (
+                                        <motion.div
+                                            key={i}
+                                            animate={{ 
+                                                height: [12, Math.max(12, (audioLevel / 2) * (1 - Math.abs(i-4)/5)), 12]
+                                            }}
+                                            transition={{ duration: 0.1, repeat: Infinity }}
+                                            className="w-1.5 bg-gradient-to-t from-indigo-600 to-purple-500 rounded-full"
+                                        />
+                                    ))}
+                                </div>
+                             </div>
+
+                             <Button 
+                                onClick={handleVoiceMission}
+                                className="h-14 px-8 bg-black text-white rounded-full text-xs font-black uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                             >
+                                <Square className="w-4 h-4 fill-current text-red-500" />
+                                Terminer la dictée
+                             </Button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <Button 
+                                onClick={handleVoiceMission}
+                                disabled={isProcessingVocally}
+                                className="h-14 px-8 bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-[0_15px_30px_rgba(79,70,229,0.3)] flex items-center gap-3 active:scale-95 transition-all"
+                            >
+                                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                                    <Mic className="w-5 h-5 text-white" />
+                                </div>
+                                Dicter une mission
+                            </Button>
+
+                            <div className="flex items-center gap-3 px-4">
+                                <div className="w-px h-8 bg-black/10" />
+                                <Button 
+                                    onClick={generateAISuggestion}
+                                    variant="ghost"
+                                    className="text-indigo-600 hover:bg-indigo-50 font-black uppercase tracking-widest text-[10px] gap-2"
+                                >
+                                    <BrainCircuit className="w-4 h-4" />
+                                    Dispatch IA
+                                </Button>
+                            </div>
+                          </div>
+                        )}
                     </div>
                 )}
 
@@ -2540,6 +2518,164 @@ export function AdminDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* 5b. CRM / Clients Management Dialog */}
+      <Dialog open={isCRMOpen} onOpenChange={setIsCRMOpen}>
+        <DialogContent className="w-[90vw] max-w-2xl h-[80vh] rounded-[2.5rem] p-0 border-none shadow-2xl overflow-hidden bg-white flex flex-col">
+          <div className="px-8 pt-8 pb-4">
+            <div className="flex justify-between items-end mb-6">
+              <DialogTitle className="text-3xl font-bold tracking-tight text-slate-900">Clients</DialogTitle>
+              <Button 
+                onClick={() => setIsAddClientOpen(true)}
+                variant="ghost"
+                className="text-primary font-semibold hover:bg-transparent p-0 h-auto"
+              >
+                Ajouter
+              </Button>
+            </div>
+            
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input 
+                placeholder="Rechercher" 
+                className="pl-10 h-10 w-full rounded-xl bg-slate-100 border-none text-base placeholder:text-slate-500 focus-visible:ring-0"
+                value={customerSearch}
+                onChange={(e) => setCustomerSearch(e.target.value)}
+              />
+            </div>
+          </div>
+            
+          <div className="px-8 flex-1 overflow-y-auto custom-scrollbar">
+            <div className="divide-y divide-slate-100 pb-8">
+              {clients
+                .filter(c => 
+                  c.name.toLowerCase().includes(customerSearch.toLowerCase()) || 
+                  c.address.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                  (c.contact_info && c.contact_info.includes(customerSearch))
+                )
+                .sort((a,b) => a.name.localeCompare(b.name))
+                .map((client) => (
+                  <div 
+                    key={client.id}
+                    onClick={() => {
+                        setProfileClient(client);
+                        setIsCRMOpen(false);
+                    }}
+                    className="py-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors group px-2 -mx-2 rounded-lg"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm">
+                        {client.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="text-[15px] font-semibold text-slate-900 leading-tight">{client.name}</h4>
+                        <p className="text-sm text-slate-500">{client.contact_info || "Sans contact"}</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400" />
+                  </div>
+                ))}
+              
+              {clients.length === 0 && (
+                <div className="py-20 text-center space-y-4">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
+                    <Users className="w-10 h-10 text-slate-300" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-400">Aucun client trouvé</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="p-4 border-t border-slate-100 flex justify-center bg-white/50 backdrop-blur-sm">
+            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
+              {clients.length} CONTACTS
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Client Dialog */}
+      <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
+        <DialogContent className="max-w-sm rounded-[2.5rem] p-8 glass bg-white/95 border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase tracking-tight">Ajouter un Client</DialogTitle>
+            <DialogDescription className="text-3xs font-bold uppercase tracking-widest text-muted-foreground">Enregistrement manuel base CRM</DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-3xs font-black uppercase tracking-widest text-muted-foreground ml-1">Prénom</Label>
+                <Input 
+                  placeholder="Jean"
+                  className="h-12 rounded-xl bg-black/5 border-none"
+                  value={newClient.firstName}
+                  onChange={e => setNewClient({...newClient, firstName: e.target.value})}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-3xs font-black uppercase tracking-widest text-muted-foreground ml-1">Nom</Label>
+                <Input 
+                  placeholder="Dupont"
+                  className="h-12 rounded-xl bg-black/5 border-none"
+                  value={newClient.lastName}
+                  onChange={e => setNewClient({...newClient, lastName: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-3xs font-black uppercase tracking-widest text-muted-foreground ml-1">Adresse Postal</Label>
+              <Input 
+                placeholder="Ex: 5 Rue de la Mairie, 67000 Strasbourg"
+                className="h-12 rounded-xl bg-black/5 border-none"
+                value={newClient.address}
+                onChange={e => setNewClient({...newClient, address: e.target.value})}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-3xs font-black uppercase tracking-widest text-muted-foreground ml-1">Numéro de téléphone</Label>
+              <Input 
+                placeholder="06 XX XX XX XX"
+                className="h-12 rounded-xl bg-black/5 border-none"
+                value={newClient.phone}
+                onChange={e => setNewClient({...newClient, phone: e.target.value})}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-3xs font-black uppercase tracking-widest text-muted-foreground ml-1">Adresse Mail</Label>
+              <Input 
+                placeholder="client@email.com"
+                className="h-12 rounded-xl bg-black/5 border-none"
+                value={newClient.email}
+                onChange={e => setNewClient({...newClient, email: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <Button 
+            className="w-full h-12 bg-black text-white rounded-2xl font-black uppercase tracking-widest"
+            disabled={!newClient.firstName || !newClient.lastName || !newClient.address}
+            onClick={async () => {
+              const { addClient } = useStore.getState();
+              await addClient({
+                name: `${newClient.firstName} ${newClient.lastName}`.trim(),
+                address: newClient.address,
+                contact_info: newClient.phone,
+                phone: newClient.phone,
+                email: newClient.email
+              });
+              setIsAddClientOpen(false);
+              setNewClient({ firstName: '', lastName: '', address: '', phone: '', email: '' });
+              setToast({ message: "Client ajouté avec succès !", type: 'success' });
+            }}
+          >
+            Valider l&apos;ajout
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* 6. Dialog: Menu Admin & IA Telemetry */}
       <Dialog open={isTelemetryOpen} onOpenChange={setIsTelemetryOpen}>
@@ -2548,8 +2684,8 @@ export function AdminDashboard() {
             <DialogTitle>Console Admin Telemetry</DialogTitle>
             <DialogDescription>Performance monitoring and AI dispatcher status</DialogDescription>
           </DialogHeader>
-          <div className="p-8 space-y-8">
-            <div className="flex justify-between items-center">
+          <div className="flex-1 overflow-y-auto max-h-[75vh] p-8 space-y-8 custom-scrollbar">
+            <div className="flex justify-between items-center bg-white/50 backdrop-blur-md sticky top-0 z-10 -m-8 mb-6 p-8 border-b border-black/5">
               <div>
                 <DialogTitle className="text-2xl font-black tracking-tighter uppercase leading-none">Console Admin</DialogTitle>
                 <p className="text-2xs font-black text-indigo-600 uppercase tracking-widest mt-1">Serrurerie Alsacienne OS v2.4 - Autonomous Mode</p>
@@ -2591,6 +2727,7 @@ export function AdminDashboard() {
                   </div>
                </div>
 
+
                <div className="grid grid-cols-2 gap-4">
                   <div className="bg-black/5 p-4 rounded-2xl border border-black/5">
                     <p className="text-3xs font-black text-muted-foreground uppercase tracking-widest mb-1">Requêtes IA / Jour</p>
@@ -2602,14 +2739,21 @@ export function AdminDashboard() {
                   </div>
                </div>
 
-               <div className="space-y-3">
+               <div className="bg-indigo-50 rounded-[2rem] p-6 border border-indigo-100 space-y-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Mail className="w-4 h-4 text-red-500" />
+                    <h3 className="text-xs font-black uppercase tracking-widest">Intégration Google Business</h3>
+                  </div>
                   <Button 
                     onClick={() => window.location.href = '/api/auth/google'}
-                    className="w-full h-12 bg-white border border-black/5 text-black rounded-2xl font-black uppercase text-2xs tracking-widest hover:bg-black/5 shadow-sm flex items-center justify-center gap-3"
+                    className="w-full h-11 bg-white border border-black/5 text-black rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black/5 shadow-sm flex items-center justify-center gap-2"
                   >
-                    <Mail className="w-4 h-4 text-red-500" /> 
-                    Link Gmail Business Account
+                    Lier Compte Gmail Pro
                   </Button>
+                  <p className="text-[10px] font-medium text-indigo-700/60 leading-tight">
+                    Synchronise automatiquement les demandes de dépannage reçues par email.
+                  </p>
+               </div>
 
                   <div className="bg-black/5 rounded-[2rem] p-6 border border-black/5 space-y-4">
                     <div className="flex items-center gap-2 mb-1">
@@ -2649,7 +2793,6 @@ export function AdminDashboard() {
                   </Button>
                </div>
             </div>
-          </div>
         </DialogContent>
       </Dialog>
 
@@ -2668,7 +2811,7 @@ export function AdminDashboard() {
             <div className="flex flex-col">
               <span className="text-2xs font-black uppercase tracking-[0.2em] text-green-400 leading-none mb-1">Système Notifié</span>
               <span className="text-xs font-bold text-white whitespace-nowrap">
-                {toast.message}
+                {toast?.message}
               </span>
             </div>
           </motion.div>
@@ -2711,15 +2854,24 @@ export function AdminDashboard() {
                   <h3 className="text-lg font-black tracking-tighter">{call.clientName}</h3>
                   <p className="text-2xs font-medium opacity-50">{call.phoneNumber}</p>
                 </div>
-                <Button 
-                  onClick={() => {
-                    const client = clients.find(c => c.id === call.clientId);
-                    if (client) setProfileClient(client);
-                  }}
-                  className="ml-4 h-11 bg-white text-black hover:bg-white/90 rounded-xl text-3xs font-black uppercase tracking-widest px-6"
-                >
-                  Voir Fiche
-                </Button>
+                <div className="flex flex-col gap-2 ml-4">
+                  <Button 
+                    onClick={() => {
+                      const client = clients.find(c => c.id === call.clientId);
+                      if (client) setProfileClient(client);
+                    }}
+                    className="h-11 bg-white text-black hover:bg-white/90 rounded-xl text-3xs font-black uppercase tracking-widest px-6"
+                  >
+                    Voir Fiche
+                  </Button>
+                  <Button 
+                    variant="ghost"
+                    onClick={() => dismissCall(call.id)}
+                    className="h-8 bg-white/10 text-white hover:bg-white/20 rounded-xl text-[8px] font-black uppercase tracking-widest"
+                  >
+                    Ignorer
+                  </Button>
+                </div>
              </motion.div>
           ))}
         </AnimatePresence>
