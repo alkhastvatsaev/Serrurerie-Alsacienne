@@ -32,7 +32,8 @@ export async function fetchCustomerEmails(email: string): Promise<GmailMessage[]
             }
         ];
     }
-    return await response.ok ? response.json() : [];
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
   } catch (e) {
     console.error("Gmail fetch error:", e);
     return [];

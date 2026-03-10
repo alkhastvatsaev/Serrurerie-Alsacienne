@@ -47,12 +47,21 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
   React.useEffect(() => {
     if (client.email) {
       setLoading(true);
-      fetchCustomerEmails(client.email).then(msgs => {
-        setEmails(msgs);
-        setLoading(false);
-      });
+      fetchCustomerEmails(client.email)
+        .then(msgs => {
+          setEmails(Array.isArray(msgs) ? msgs : []);
+        })
+        .catch(err => {
+          console.error("Effect email error", err);
+          setEmails([]);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setEmails([]);
     }
-  }, [client.email]);
+  }, [client.id, client.email]);
 
   const allActivities: ActivityItem[] = React.useMemo(() => {
     if (!client) return [];
