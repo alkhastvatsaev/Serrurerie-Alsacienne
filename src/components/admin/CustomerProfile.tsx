@@ -28,14 +28,19 @@ interface CustomerProfileProps {
 }
 
 export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClose }) => {
+  if (!client) return null;
   const [activeTab, setActiveTab] = useState<'activity' | 'history' | 'notes'>('activity');
-  const interventions = useStore(state => state.interventions.filter(i => {
-    if (!client) return false;
-    const isById = i.client_id === client.id;
-    const isByAddress = client.address && i.address && i.address.toLowerCase().includes(client.address.toLowerCase());
-    return isById || isByAddress;
-  }));
-  const users = useStore(state => state.users);
+  const interventions = useStore(state => {
+    const allInts = state.interventions;
+    if (!Array.isArray(allInts)) return [];
+    return allInts.filter(i => {
+      if (!client || !i) return false;
+      const isById = i.client_id === client.id;
+      const isByAddress = client.address && i.address && typeof i.address === 'string' && i.address.toLowerCase().includes(client.address.toLowerCase());
+      return isById || isByAddress;
+    });
+  });
+  const users = useStore(state => Array.isArray(state.users) ? state.users : []);
   const [emails, setEmails] = useState<GmailMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -50,14 +55,17 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
   }, [client.email]);
 
   const allActivities: ActivityItem[] = React.useMemo(() => {
-    const acts = [...(client.activities || [])];
+    if (!client) return [];
+    
+    // Safely initialize activities
+    const acts: ActivityItem[] = Array.isArray(client.activities) ? [...client.activities] : [];
     
     // Add Gmail emails to activities
     if (Array.isArray(emails)) {
       emails.forEach(email => {
-        if (!email) return;
+        if (!email || !email.id) return;
         acts.push({
-          id: email.id || Math.random().toString(),
+          id: email.id,
           type: 'email',
           title: `Email: ${email.subject || '(Sans sujet)'}`,
           description: email.snippet || '',
@@ -68,26 +76,34 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
     }
 
     // Add recent interventions to activities
-    interventions.forEach(int => {
-      if (!int.date) return;
-      acts.push({
-        id: int.id,
-        type: 'intervention',
-        title: `Mission ${int.status === 'done' ? 'Terminée' : 'Programmée'}`,
-        description: int.description || `Intervention à ${int.address}`,
-        timestamp: int.time ? `${int.date}T${int.time}` : int.date,
-        status: int.status
+    if (Array.isArray(interventions)) {
+      interventions.forEach(int => {
+        if (!int || !int.id || !int.date) return;
+        acts.push({
+          id: int.id,
+          type: 'intervention',
+          title: `Mission ${int.status === 'done' ? 'Terminée' : 'Programmée'}`,
+          description: int.description || `Intervention à ${int.address}`,
+          timestamp: int.time ? `${int.date}T${int.time}` : int.date,
+          status: int.status
+        });
       });
-    });
+    }
 
     return acts.sort((a, b) => {
-      const dateA = new Date(a.timestamp).getTime();
-      const dateB = new Date(b.timestamp).getTime();
-      if (isNaN(dateA)) return 1;
-      if (isNaN(dateB)) return -1;
-      return dateB - dateA;
+      if (!a.timestamp) return 1;
+      if (!b.timestamp) return -1;
+      try {
+        const dateA = new Date(a.timestamp).getTime();
+        const dateB = new Date(b.timestamp).getTime();
+        if (isNaN(dateA)) return 1;
+        if (isNaN(dateB)) return -1;
+        return dateB - dateA;
+      } catch (e) {
+        return 0;
+      }
     });
-  }, [client.activities, emails, interventions]);
+  }, [client, emails, interventions]);
 
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
@@ -251,18 +267,18 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
                       </p>
                     </div>
 
-                    {int.history && int.history.length > 0 && (
+                    {int.history && Array.isArray(int.history) && int.history.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-black/5 space-y-2">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Suivi journalier :</p>
-                        {int.history.map((h, hidx) => (
+                        {int.history.map((h: any, hidx: number) => h ? (
                            <div key={hidx} className="bg-white/40 p-2 rounded-xl text-[11px] border border-black/5">
                               <div className="flex justify-between items-center mb-1">
-                                <span className="font-black text-[9px] uppercase">{h.tech_name}</span>
-                                <span className="text-[9px] text-muted-foreground opacity-60">{h.date}</span>
+                                <span className="font-black text-[9px] uppercase">{h.tech_name || 'Inconnu'}</span>
+                                <span className="text-[9px] text-muted-foreground opacity-60">{h.date || '---'}</span>
                               </div>
-                              <p className="text-muted-foreground">{h.notes}</p>
+                              <p className="text-muted-foreground">{h.notes || ''}</p>
                            </div>
-                        ))}
+                        ) : null)}
                       </div>
                     )}
                   </div>
