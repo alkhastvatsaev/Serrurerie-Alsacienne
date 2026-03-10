@@ -7,9 +7,20 @@ import {
 } from 'lucide-react';
 import { Client, ActivityItem, Intervention } from '@/types';
 import { useStore } from '@/store/useStore';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { fetchCustomerEmails, GmailMessage } from '@/lib/gmail';
+
+const safeFormat = (dateInput: any, formatStr: string) => {
+  if (!dateInput) return 'N/A';
+  try {
+    const date = typeof dateInput === 'string' ? parseISO(dateInput) : new Date(dateInput);
+    if (!isValid(date)) return '---';
+    return format(date, formatStr, { locale: fr });
+  } catch (e) {
+    return '---';
+  }
+};
 
 interface CustomerProfileProps {
   client: Client;
@@ -18,7 +29,12 @@ interface CustomerProfileProps {
 
 export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClose }) => {
   const [activeTab, setActiveTab] = useState<'activity' | 'history' | 'notes'>('activity');
-  const interventions = useStore(state => state.interventions.filter(i => i.client_id === client.id || i.address.includes(client.address)));
+  const interventions = useStore(state => state.interventions.filter(i => {
+    if (!client) return false;
+    const isById = i.client_id === client.id;
+    const isByAddress = client.address && i.address && i.address.toLowerCase().includes(client.address.toLowerCase());
+    return isById || isByAddress;
+  }));
   const users = useStore(state => state.users);
   const [emails, setEmails] = useState<GmailMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,30 +53,40 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
     const acts = [...(client.activities || [])];
     
     // Add Gmail emails to activities
-    emails.forEach(email => {
-      acts.push({
-        id: email.id,
-        type: 'email',
-        title: `Email: ${email.subject}`,
-        description: email.snippet,
-        timestamp: email.date,
-        metadata: { direction: 'inbound' }
+    if (Array.isArray(emails)) {
+      emails.forEach(email => {
+        if (!email) return;
+        acts.push({
+          id: email.id || Math.random().toString(),
+          type: 'email',
+          title: `Email: ${email.subject || '(Sans sujet)'}`,
+          description: email.snippet || '',
+          timestamp: email.date || new Date().toISOString(),
+          metadata: { direction: 'inbound' }
+        });
       });
-    });
+    }
 
     // Add recent interventions to activities
     interventions.forEach(int => {
+      if (!int.date) return;
       acts.push({
         id: int.id,
         type: 'intervention',
         title: `Mission ${int.status === 'done' ? 'Terminée' : 'Programmée'}`,
         description: int.description || `Intervention à ${int.address}`,
-        timestamp: `${int.date}T${int.time}:00`,
+        timestamp: int.time ? `${int.date}T${int.time}` : int.date,
         status: int.status
       });
     });
 
-    return acts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return acts.sort((a, b) => {
+      const dateA = new Date(a.timestamp).getTime();
+      const dateB = new Date(b.timestamp).getTime();
+      if (isNaN(dateA)) return 1;
+      if (isNaN(dateB)) return -1;
+      return dateB - dateA;
+    });
   }, [client.activities, emails, interventions]);
 
   const getActivityIcon = (type: ActivityItem['type']) => {
@@ -161,7 +187,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
                       <div className="flex justify-between items-start">
                         <p className="text-xs font-bold leading-tight">{activity.title}</p>
                         <span className="text-[10px] font-medium text-muted-foreground/60 uppercase whitespace-nowrap ml-2">
-                          {format(new Date(activity.timestamp), 'dd MMM', { locale: fr })}
+                          {safeFormat(activity.timestamp, 'dd MMM')}
                         </span>
                       </div>
                       <p className="text-[11px] font-medium text-muted-foreground/80 leading-relaxed line-clamp-2">
@@ -193,7 +219,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
                       <div>
                         <p className="text-xs font-black">{int.category?.toUpperCase() || 'INTERVENTION'}</p>
                         <p className="text-3xs font-medium text-muted-foreground">
-                          {format(new Date(int.date), 'dd MMMM yyyy', { locale: fr })}
+                          {safeFormat(int.date, 'dd MMMM yyyy')}
                         </p>
                       </div>
                       <div className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
