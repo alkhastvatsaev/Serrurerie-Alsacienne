@@ -126,10 +126,10 @@ export function AdminDashboard() {
     }
   }, [isMobile]);
 
-  // Real-time Security Monitoring (Sentinel)
-  useEffect(() => {
-    initSentinel();
-  }, [initSentinel]);
+  // Real-time Security Monitoring (Sentinel) - DISABLED as requested
+  // useEffect(() => {
+  //   initSentinel();
+  // }, [initSentinel]);
 
   const generateAISuggestion = async () => {
     setIsAnalyzing(true);
@@ -466,7 +466,7 @@ export function AdminDashboard() {
           onSelectIntervention={setSelectedIntervention}
           onContactTech={() => alert("Fonctionnalité Chat Équipe (Demo Mode)")}
           prospects={[]}
-          incidents={securityIncidents}
+          incidents={[]}
           isZoneEditMode={isZoneEditMode}
         />
       </div>
@@ -2137,50 +2137,12 @@ export function AdminDashboard() {
                   </div>
                </div>
 
-               {/* 4. LOCAL SENTINEL ADS (from SecurityIncidents) */}
-               <div className="space-y-6 pb-10">
-                  <div className="flex items-center justify-between">
-                     <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                        <Zap className="w-4 h-4 text-primary fill-current" />
-                        Capture de Leads (Strasbourg Sentinel)
-                     </h3>
-                     <Badge className="bg-blue-500 text-white border-none text-3xs font-black px-2">{securityIncidents.length} EVENTS</Badge>
-                  </div>
-
-                  <div className="space-y-4">
-                     {securityIncidents.slice(0, 3).map((incident, idx) => (
-                        <div key={idx} className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 hover:border-primary/30 transition-all group overflow-hidden relative">
-                           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                              <Star className="w-16 h-16" />
-                           </div>
-                           <div className="flex justify-between items-start mb-4 relative z-10">
-                              <div>
-                                 <p className="text-4xs font-black text-primary uppercase tracking-widest mb-1">{incident.type}</p>
-                                 <h4 className="text-sm font-black tracking-tight">{incident.location}</h4>
-                                 <p className="text-3xs font-bold text-white/40 mt-1">{incident.source} • {incident.timestamp}</p>
-                              </div>
-                              <div className="text-right">
-                                 <p className="text-sm font-black text-green-400">~{incident.potentialRevenue} €</p>
-                                 <p className="text-4xs font-black text-white/40 uppercase">Potentiel CA</p>
-                              </div>
-                           </div>
-                           <p className="text-2xs text-white/60 leading-relaxed font-medium mb-4 italic line-clamp-2">
-                              &ldquo;{incident.salesPitch}&rdquo;
-                           </p>
-                           <Button 
-                              size="sm" 
-                              className="w-full h-10 rounded-xl bg-primary hover:bg-primary/80 text-white font-black uppercase text-2xs tracking-widest border-none flex items-center gap-2"
-                              onClick={() => {
-                                 setToast({ message: "Campagne de micro-ciblage lancée sur ce périmètre.", type: 'success' });
-                                 setTimeout(() => setToast(null), 3000);
-                              }}
-                           >
-                              Lancer Campagne Sniper Locale
-                           </Button>
-                        </div>
-                     ))}
-                  </div>
-               </div>
+                {/* 4. LOCAL SENTINEL ADS (from SecurityIncidents) - HIDDEN as requested */}
+                {/* 
+                <div className="space-y-6 pb-10">
+                   ...
+                </div>
+                */}
             </div>
 
             {/* Footer: Tech Specs */}
