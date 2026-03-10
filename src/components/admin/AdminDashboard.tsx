@@ -31,7 +31,7 @@ import { findTechForLocation } from "@/lib/geo-utils";
 import { calculatePriceBreakdown, formatPrice } from "@/lib/pricing";
 import dynamic from "next/dynamic";
 import { CustomerProfile } from "./CustomerProfile";
-import { ErrorBoundary } from "./ErrorBoundary";
+import { ErrorBoundary } from "../ErrorBoundary";
 import { useState, useMemo, useEffect, Fragment, useRef } from "react";
 import { Notification } from "@/types";
 
