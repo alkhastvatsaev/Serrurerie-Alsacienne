@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Phone, Mail, MapPin, History, Calendar, User, 
   ChevronRight, ExternalLink, MessageSquare, Clock, 
-  ArrowUpRight, ArrowDownLeft, FileText, CheckCircle2
+  ArrowUpRight, ArrowDownLeft, FileText, CheckCircle
 } from 'lucide-react';
 import { Client, ActivityItem, Intervention } from '@/types';
 import { useStore } from '@/store/useStore';
@@ -11,12 +11,23 @@ import { format, isValid, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { fetchCustomerEmails, GmailMessage } from '@/lib/gmail';
 
+const toDate = (input: any): Date | null => {
+    if (!input) return null;
+    if (input instanceof Date) return input;
+    if (typeof input?.toDate === 'function') return input.toDate();
+    if (typeof input === 'number') return new Date(input);
+    if (typeof input === 'string') {
+        try { return parseISO(input); } catch(e) { return new Date(input); }
+    }
+    return null;
+};
+
 const safeFormat = (dateInput: any, formatStr: string) => {
-  if (!dateInput) return 'N/A';
+  if (!dateInput) return '---';
   try {
-    const date = typeof dateInput === 'string' ? parseISO(dateInput) : new Date(dateInput);
-    if (!isValid(date)) return '---';
-    return format(date, formatStr, { locale: fr });
+    const d = toDate(dateInput);
+    if (!d || !isValid(d)) return '---';
+    return format(d, formatStr, { locale: fr });
   } catch (e) {
     return '---';
   }
@@ -28,7 +39,18 @@ interface CustomerProfileProps {
 }
 
 export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClose }) => {
-  if (!client) return null;
+  // Use try-catch block for the entire component logic to avoid crashing the parent
+  try {
+    if (!client) return null;
+    
+    // Hooks MUST be outside any try-catch that could return early, but here they are at the top.
+    // However, the rule is hooks must be called exactly the same number of times.
+    // So we don't return null before hooks.
+  } catch (e) {
+      console.error("CustomerProfile setup error:", e);
+      return null;
+  }
+
   const [activeTab, setActiveTab] = useState<'activity' | 'history' | 'notes'>('activity');
   const interventions = useStore(state => {
     const allInts = state.interventions;
@@ -45,7 +67,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
   const [loading, setLoading] = useState(false);
 
   React.useEffect(() => {
-    if (client.email) {
+    if (client && client.email) {
       setLoading(true);
       fetchCustomerEmails(client.email)
         .then(msgs => {
@@ -61,7 +83,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
     } else {
       setEmails([]);
     }
-  }, [client.id, client.email]);
+  }, [client?.id, client?.email]);
 
   const allActivities: ActivityItem[] = React.useMemo(() => {
     if (!client) return [];
@@ -100,13 +122,13 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
     }
 
     return acts.sort((a, b) => {
-      if (!a.timestamp) return 1;
-      if (!b.timestamp) return -1;
+      if (!a || !a.timestamp) return 1;
+      if (!b || !b.timestamp) return -1;
       try {
-        const dateA = new Date(a.timestamp).getTime();
-        const dateB = new Date(b.timestamp).getTime();
-        if (isNaN(dateA)) return 1;
-        if (isNaN(dateB)) return -1;
+        const d_a = toDate(a.timestamp);
+        const d_b = toDate(b.timestamp);
+        const dateA = d_a ? d_a.getTime() : 0;
+        const dateB = d_b ? d_b.getTime() : 0;
         return dateB - dateA;
       } catch (e) {
         return 0;
@@ -124,6 +146,8 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
     }
   };
 
+  if (!client) return null;
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
@@ -139,7 +163,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
               <User className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-black tracking-tight">{client.name}</h2>
+              <h2 className="text-lg font-black tracking-tight">{client.name || "Client"}</h2>
               <p className="text-3xs font-medium text-muted-foreground uppercase tracking-widest">Fiche Client</p>
             </div>
           </div>
@@ -151,15 +175,15 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
         <div className="space-y-3">
           <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/80">
             <Phone className="w-3.5 h-3.5" />
-            <span>{client.phone || client.contact_info}</span>
+            <span>{client.phone || client.contact_info || "Sans numéro"}</span>
           </div>
           <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/80">
             <Mail className="w-3.5 h-3.5" />
-            <span>{client.email || "Non renseigné"}</span>
+            <span>{typeof client?.email === 'string' ? client.email : "Non renseigné"}</span>
           </div>
           <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/80">
             <MapPin className="w-3.5 h-3.5" />
-            <span className="line-clamp-1">{client.address}</span>
+            <span className="line-clamp-1">{typeof client?.address === 'string' ? client.address : "Sans adresse"}</span>
           </div>
         </div>
       </div>
@@ -178,6 +202,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
               activeTab === tab.id ? 'border-primary text-black' : 'border-transparent text-muted-foreground/40 hover:text-muted-foreground'
             }`}
           >
+            {/* tab.icon is a component, we use it directly */}
             <tab.icon className="w-3 h-3" />
             {tab.label}
           </button>
@@ -189,6 +214,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
         <AnimatePresence mode="wait">
           {activeTab === 'activity' && (
             <motion.div 
+              key="activity"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -199,9 +225,9 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
                 {loading && <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
               </div>
               
-              {allActivities.length ? (
+              {allActivities && allActivities.length > 0 ? (
                 allActivities.map((activity, idx) => (
-                  <div key={activity.id} className="relative pl-8 pb-6 last:pb-0">
+                  <div key={activity.id || idx} className="relative pl-8 pb-6 last:pb-0">
                     {idx !== allActivities.length - 1 && (
                       <div className="absolute left-[11px] top-6 bottom-0 w-[2px] bg-black/[0.03]" />
                     )}
@@ -210,13 +236,13 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between items-start">
-                        <p className="text-xs font-bold leading-tight">{activity.title}</p>
+                        <p className="text-xs font-bold leading-tight">{activity.title || "Activité"}</p>
                         <span className="text-[10px] font-medium text-muted-foreground/60 uppercase whitespace-nowrap ml-2">
                           {safeFormat(activity.timestamp, 'dd MMM')}
                         </span>
                       </div>
                       <p className="text-[11px] font-medium text-muted-foreground/80 leading-relaxed line-clamp-2">
-                        {activity.description}
+                        {activity.description || ""}
                       </p>
                     </div>
                   </div>
@@ -232,12 +258,13 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
 
           {activeTab === 'history' && (
             <motion.div 
+              key="history"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               className="space-y-4"
             >
-              {interventions.length ? (
+              {interventions && interventions.length > 0 ? (
                 interventions.map(int => (
                   <div key={int.id} className="p-4 rounded-2xl bg-black/[0.02] border border-black/5 space-y-3">
                     <div className="flex justify-between items-start">
@@ -250,21 +277,21 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
                       <div className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
                         int.status === 'done' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                       }`}>
-                        {int.status}
+                        {int.status || "En attente"}
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
                       <div className="flex -space-x-2">
-                        {(int.tech_ids || [int.tech_id]).map(tid => {
+                        {(int.tech_ids || [int.tech_id] || []).filter(Boolean).map((tid, tidx) => {
                           const tech = users.find(u => u.id === tid);
                           return (
-                            <div key={tid} className="w-6 h-6 rounded-full border-2 border-white overflow-hidden bg-black/5" title={tech?.name}>
+                            <div key={tid || tidx} className="w-6 h-6 rounded-full border-2 border-white overflow-hidden bg-black/5" title={tech?.name}>
                               {tech?.avatar_url ? (
                                 <img src={tech.avatar_url} alt="" className="w-full h-auto" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-[8px] font-black uppercase bg-primary/10 text-primary">
-                                  {tech?.name.charAt(0)}
+                                  {tech?.name?.charAt(0) || '?'}
                                 </div>
                               )}
                             </div>
@@ -272,7 +299,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
                         })}
                       </div>
                       <p className="text-3xs font-medium text-muted-foreground italic">
-                        {(int.tech_ids || [int.tech_id]).length} technicien(s) intervenu(s)
+                        {Math.max(1, (int.tech_ids || [int.tech_id] || []).length)} technicien(s) intervenu(s)
                       </p>
                     </div>
 
