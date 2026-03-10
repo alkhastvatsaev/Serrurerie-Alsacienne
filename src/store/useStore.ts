@@ -738,26 +738,33 @@ export const useStore = create<AppState>()((set, get) => ({
         } catch (e) { console.error("Clients listener error:", e); }
       },
 
-      addClient: async (client: Omit<Client, 'id'>) => {
-        try {
-          const docRef = await addDoc(collection(db, 'clients'), {
-            ...client,
-            created_at: serverTimestamp()
-          });
-          return docRef.id;
-        } catch (e) {
-          console.error("Error adding client: ", e);
-        }
-      },
+  addClient: async (client: Omit<Client, 'id'>) => {
+    try {
+      // Normalize phone number before saving
+      const cleanPhone = client.phone ? client.phone.replace(/[\s\.\-\(\)]/g, '') : '';
+      const docRef = await addDoc(collection(db, 'clients'), {
+        ...client,
+        phone: cleanPhone,
+        created_at: serverTimestamp()
+      });
+      return docRef.id;
+    } catch (e) {
+      console.error("Error adding client: ", e);
+    }
+  },
 
-      updateClient: async (id: string, updates: Partial<Client>) => {
-        try {
-          const clientRef = doc(db, 'clients', id);
-          await updateDoc(clientRef, updates);
-        } catch (e) {
-          console.error("Error updating client: ", e);
-        }
-      },
+  updateClient: async (id: string, updates: Partial<Client>) => {
+    try {
+      const clientRef = doc(db, 'clients', id);
+      const cleanUpdates = { ...updates };
+      if (cleanUpdates.phone) {
+        cleanUpdates.phone = cleanUpdates.phone.replace(/[\s\.\-\(\)]/g, '');
+      }
+      await updateDoc(clientRef, cleanUpdates);
+    } catch (e) {
+      console.error("Error updating client: ", e);
+    }
+  },
 
       updateIntervention: async (id, updates) => {
         // 1. Optimistic Update (Immediate UI response)
