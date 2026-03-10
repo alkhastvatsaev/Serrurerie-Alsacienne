@@ -52,17 +52,19 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
   }
 
   const [activeTab, setActiveTab] = useState<'activity' | 'history' | 'notes'>('activity');
-  const interventions = useStore(state => {
-    const allInts = state.interventions;
-    if (!Array.isArray(allInts)) return [];
-    return allInts.filter(i => {
+  const allInterventions = useStore(state => state.interventions);
+  const interventions = React.useMemo(() => {
+    if (!Array.isArray(allInterventions)) return [];
+    return allInterventions.filter(i => {
       if (!client || !i) return false;
       const isById = i.client_id === client.id;
       const isByAddress = client.address && i.address && typeof i.address === 'string' && i.address.toLowerCase().includes(client.address.toLowerCase());
       return isById || isByAddress;
     });
-  });
-  const users = useStore(state => Array.isArray(state.users) ? state.users : []);
+  }, [allInterventions, client?.id, client?.address]);
+  
+  const rawUsers = useStore(state => state.users);
+  const users = React.useMemo(() => Array.isArray(rawUsers) ? rawUsers : [], [rawUsers]);
   const [emails, setEmails] = useState<GmailMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
