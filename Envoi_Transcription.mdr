@@ -1,0 +1,33 @@
+[
+  {
+    "active": true,
+    "description": "Envoi automatique d'enregistrement Cube ACR vers l'IA",
+    "isShowingExtendedDescription": false,
+    "m_actionList": [
+      {
+        "m_classType": "WaitAction",
+        "m_seconds": 5,
+        "m_isOrCondition": false
+      },
+      {
+        "m_classType": "ShellScriptAction",
+        "m_script": "LATEST=$(ls -t /storage/emulated/0/Documents/CubeCallRecorder/All/* | head -1)\ncurl -X POST -F \"phoneNumber=[call_number]\" -F \"audio=@$LATEST\" https://serruremanager.vercel.app/api/call-transcript",
+        "m_useRoot": false,
+        "m_timeout": 60,
+        "m_isOrCondition": false
+      }
+    ],
+    "m_constraintList": [],
+    "m_excludeLog": false,
+    "m_isOrCondition": false,
+    "m_links": [],
+    "m_name": "Envoi Transcription Auto",
+    "m_triggerList": [
+      {
+        "m_classType": "CallFinishedTrigger",
+        "m_anyNumber": true,
+        "m_isOrCondition": false
+      }
+    ]
+  }
+]

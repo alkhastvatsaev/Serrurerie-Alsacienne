@@ -5,6 +5,7 @@ import {
   ChevronRight, ExternalLink, MessageSquare, Clock, 
   ArrowUpRight, ArrowDownLeft, FileText, CheckCircle
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Client, ActivityItem, Intervention } from '@/types';
 import { useStore } from '@/store/useStore';
 import { format, isValid, parseISO } from 'date-fns';
@@ -328,15 +329,92 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
               )}
             </motion.div>
           )}
+
+          {activeTab === 'notes' && (
+            <motion.div 
+              key="notes"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              <div className="ios-card bg-primary/5 border-none p-5 rounded-3xl space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-primary/10 rounded-lg">
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                  </div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Ajouter un évènement / note</h4>
+                </div>
+                
+                <div className="space-y-3">
+                  <input 
+                    id="note-title"
+                    type="text" 
+                    placeholder="Titre de l'action (ex: Rappel facture...)"
+                    className="w-full bg-white/50 border-none rounded-xl px-4 py-2.5 text-xs font-bold placeholder:font-medium outline-none focus:ring-1 ring-primary/20"
+                  />
+                  <textarea 
+                    id="note-desc"
+                    placeholder="Détails de l'intervention ou note interne..."
+                    className="w-full bg-white/50 border-none rounded-xl px-4 py-3 text-xs font-medium placeholder:font-medium min-h-[100px] outline-none focus:ring-1 ring-primary/20 resize-none"
+                  />
+                  <Button 
+                    onClick={async () => {
+                      const title = (document.getElementById('note-title') as HTMLInputElement).value;
+                      const desc = (document.getElementById('note-desc') as HTMLTextAreaElement).value;
+                      if (!title || !desc) return alert("Veuillez remplir le titre et la description");
+                      
+                      await useStore.getState().addClientActivity(client.id, {
+                        type: 'note',
+                        title: `🖋️ ${title}`,
+                        description: desc,
+                      } as any);
+                      
+                      (document.getElementById('note-title') as HTMLInputElement).value = '';
+                      (document.getElementById('note-desc') as HTMLTextAreaElement).value = '';
+                      alert("Note ajoutée à l'historique !");
+                    }}
+                    className="w-full h-11 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20"
+                  >
+                    Enregistrer dans la Chronologie
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-widest px-2">Notes internes</p>
+                {client.activities?.filter(a => a.type === 'note').map((note, idx) => (
+                  <div key={note.id || idx} className="glass p-4 rounded-2xl border-none shadow-sm space-y-2">
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs font-bold">{note.title}</p>
+                      <span className="text-[9px] font-bold opacity-30 uppercase">{safeFormat(note.timestamp, 'dd/MM HH:mm')}</span>
+                    </div>
+                    <p className="text-[11px] font-medium text-muted-foreground leading-relaxed italic">{note.description}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
       {/* Footer Actions */}
       <div className="p-6 border-t border-black/5 bg-white">
-        <button className="w-full h-12 rounded-xl bg-black text-white text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+        <a 
+          href={`tel:${(client.phone || client.contact_info || "").replace(/\s/g, "")}`}
+          onClick={() => {
+            useStore.getState().addClientActivity(client.id, {
+              type: 'call',
+              title: '📞 Appel Sortant',
+              description: `Tentative d'appel lancée depuis le dashboard vers ${client.phone || client.contact_info}.`,
+              metadata: { direction: 'outbound' }
+            } as any);
+          }}
+          className="w-full h-12 rounded-xl bg-black text-white text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        >
           <Phone className="w-4 h-4" />
           Rappeler le client
-        </button>
+        </a>
       </div>
     </motion.div>
   );

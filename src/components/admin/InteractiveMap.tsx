@@ -540,7 +540,7 @@ const MapContent = ({
             {memoizedZones}
             {memoizedInterventions}
             {memoizedProspects}
-            {memoizedIncidents}
+            {/* {memoizedIncidents} */}
             {memoizedSuppliers}
             {users.filter(u => u.role === 'tech').map((tech) => (
                 <TechMarker 

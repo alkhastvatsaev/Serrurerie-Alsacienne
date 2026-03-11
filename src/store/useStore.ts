@@ -557,6 +557,16 @@ export const useStore = create<AppState>()((set, get) => ({
                     title: '📞 Appel Entrant',
                     message: `${latestCall.clientName || 'Inconnu'} (${latestCall.phoneNumber})`
                   });
+
+                  // Log activity in history if client is recognized
+                  if (latestCall.clientId) {
+                    get().addClientActivity(latestCall.clientId, {
+                      type: 'call',
+                      title: 'Appel Entrant Reçu',
+                      description: `Le client a appelé à ${new Date().toLocaleTimeString('fr-FR')}.`,
+                      metadata: { direction: 'inbound' }
+                    } as any);
+                  }
                 }
               }
             }
@@ -749,6 +759,8 @@ export const useStore = create<AppState>()((set, get) => ({
   },
 
       updateIntervention: async (id, updates) => {
+        const oldIntervention = get().interventions.find(i => i.id === id);
+        
         // 1. Optimistic Update (Immediate UI response)
         set((state) => ({
           interventions: state.interventions.map((int) => 
@@ -756,9 +768,27 @@ export const useStore = create<AppState>()((set, get) => ({
           )
         }));
 
+        // Log Activity in Client History
+        if (oldIntervention && updates.status && updates.status !== oldIntervention.status) {
+          const clientId = oldIntervention.client_id || (get().assets.find(a => a.id === oldIntervention.asset_id)?.client_id);
+          if (clientId) {
+             const statusLabels: Record<string, string> = {
+                'done': 'Mission Terminée ✅',
+                'in_progress': 'Technicien en route / sur place 🛠️',
+                'waiting_approval': 'Attente validation devis ⏳',
+                'pending': 'Mission reprogrammée / en attente 📅'
+             };
+             get().addClientActivity(clientId, {
+               type: 'intervention',
+               title: statusLabels[updates.status] || `Status mis à jour : ${updates.status}`,
+               description: `L'intervention à ${oldIntervention.address} est passée au statut ${updates.status}.`,
+             } as any);
+          }
+        }
+
         // AUTOMATION: Reputation Management (Google Reviews)
-        if (updates.status === 'done') {
-            const intervention = get().interventions.find(i => i.id === id);
+        if (updates.status === 'done' && oldIntervention?.status !== 'done') {
+            const intervention = oldIntervention;
             // Traverse Intervention -> Asset -> Client
             const asset = get().assets.find(a => a.id === intervention?.asset_id);
             const client = asset ? get().clients.find(c => c.id === asset.client_id) : null;
@@ -771,7 +801,6 @@ export const useStore = create<AppState>()((set, get) => ({
                     title: '⭐ E-Réputation : SMS Envoyé',
                     message: `Demande d'avis Google 5★ envoyée automatiquement à ${clientName}. (+15% de conversion)`
                 });
-                console.log(`[SMS AUTOMATION] Sent to ${clientName}: "Merci de votre confiance. Un avis 5 étoiles nous aide beaucoup : https://g.page/Serrurier-Strasbourg/review"`);
             }, 2000);
         }
 
@@ -794,11 +823,16 @@ export const useStore = create<AppState>()((set, get) => ({
          get().addNotification({
              type: 'info',
              title: '🔑 Accès B2B Généré',
-             message: `Lien "Magic Link" pour le syndic ${client.name} copié ! Envoyez-le pour qu'ils suivent leurs interventions en direct.`
+             message: `Lien "Magic Link" pour le syndic ${client.name} copié et enregistré dans l'historique.`
          });
          
-         // In a real app, this would verify auth or create a token in DB
-         console.log(`[B2B PORTAL] Generated for ${client.name}: ${link}`);
+         // Log activity
+         get().addClientActivity(clientId, {
+           type: 'note',
+           title: 'Accès Portail Généré',
+           description: `Un lien d'accès direct au portail client a été généré par un administrateur.`,
+         } as any);
+
          return link;
       },
 
@@ -939,16 +973,28 @@ export const useStore = create<AppState>()((set, get) => ({
       addIntervention: async (intervention) => {
         try {
           const { id, ...data } = intervention;
+          const newInt = { ...intervention };
+          if (!newInt.id) newInt.id = Math.random().toString(36).substr(2, 9);
           
           // Mock Geocoding if missing (Center of Strasbourg approx)
-          if (!data.latitude) {
+          if (!newInt.latitude) {
              // Randomly place in one of the zones for demo purposes
              // Or just slight offset from Strasbourg center
-             data.latitude = 48.5734 + (Math.random() - 0.5) * 0.05;
-             data.longitude = 7.7521 + (Math.random() - 0.5) * 0.05;
+             newInt.latitude = 48.5734 + (Math.random() - 0.5) * 0.05;
+             newInt.longitude = 7.7521 + (Math.random() - 0.5) * 0.05;
           }
 
-          await setDoc(doc(db, 'interventions', id), data);
+          await addDoc(collection(db, 'interventions'), newInt);
+
+          // Log in client history
+          const clientId = intervention.client_id || (get().assets.find(a => a.id === intervention.asset_id)?.client_id);
+          if (clientId) {
+            get().addClientActivity(clientId, {
+              type: 'intervention',
+              title: '📅 Nouvelle Mission Créée',
+              description: `Une mission (${intervention.category}) a été planifiée pour le ${intervention.date} à ${intervention.time} au ${intervention.address}.`,
+            } as any);
+          }
         } catch (e) {
           console.error("Error adding intervention: ", e);
         }

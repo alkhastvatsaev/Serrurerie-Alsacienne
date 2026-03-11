@@ -1,0 +1,31 @@
+C'est fait ! J'ai déposé le fichier `MacroDroid_Config.sh` dans ton dossier projet.
+
+Voici comment l'utiliser sur ton Android :
+
+### 1. Prépare la Macro sur ton téléphone
+*   Ouvre **MacroDroid**.
+*   Clique sur **Ajouter une Macro**.
+*   Nom : `Envoi Transcription Auto`.
+
+### 2. Déclencheur (Rouge)
+*   Clique sur le **+**.
+*   Choisis **Appel terminé**.
+*   Prends **Tous les contacts**.
+
+### 3. Actions (Bleu)
+C'est ici qu'on met l'intelligence :
+1.  **D'abord, ajoute un délai** : Action **Attendre avant l'action suivante** > Règle sur **5 secondes**.
+2.  **Ensuite, le script** : Action **Script Shell**.
+    *   Ouvre le fichier `MacroDroid_Config.sh` que j'ai mis dans ton dossier sur ton PC.
+    *   **Copie tout le texte** du fichier.
+    *   **Colle-le** dans la case "Texte du script" sur MacroDroid.
+
+### 4. Réglages du script
+*   **Délai d'expiration** : 60 secondes.
+*   **Utiliser root** : NON (décoché).
+
+### 5. Finalisation
+*   Sauvegarde la macro (bouton en bas à droite).
+*   Assure-toi que MacroDroid est bien activé sur ton téléphone.
+
+Dès que tu finiras un appel, MacroDroid attendra 5 secondes, cherchera le fichier audio que Cube ACR vient de créer, et l'enverra à ton application. Tu verras alors le résumé IA s'afficher dans la fiche client !

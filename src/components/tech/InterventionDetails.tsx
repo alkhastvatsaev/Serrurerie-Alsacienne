@@ -24,7 +24,7 @@ interface InterventionDetailsProps {
 }
 
 export function InterventionDetails({ intervention, onBack }: InterventionDetailsProps) {
-  const { assets, inventory, clients, decrementStock, updateIntervention, uploadImage, currentUser } = useStore();
+  const { assets, inventory, clients, decrementStock, updateIntervention, uploadImage, currentUser, addClientActivity } = useStore();
   const [parts, setParts] = useState<{ id: string; qty: number }[]>([]);
   const [isClosing, setIsClosing] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -607,7 +607,17 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                 <Button 
                     variant="outline" 
                     className="h-16 rounded-3xl border-none bg-white text-[10px] font-black uppercase tracking-widest shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-all"
-                    onClick={() => downloadPDF('INVOICE', intervention, inventory)}
+                    onClick={() => {
+                        downloadPDF('INVOICE', intervention, inventory);
+                        const clientId = intervention.client_id || (assets.find(a => a.id === intervention.asset_id)?.client_id);
+                        if (clientId) {
+                            addClientActivity(clientId, {
+                                type: 'note',
+                                title: '📄 Facture Générée (PDF)',
+                                description: `Téléchargement manuel de la facture pour l'intervention à ${intervention.address}.`,
+                            } as any);
+                        }
+                    }}
                 >
                     <Download className="w-4 h-4 opacity-50" />
                     Télécharger Facture
@@ -621,6 +631,15 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                       try {
                           await sendPDFByEmail('QUOTE', intervention, inventory);
                           alert('Devis envoyé au bureau !');
+                          
+                          const clientId = intervention.client_id || (assets.find(a => a.id === intervention.asset_id)?.client_id);
+                          if (clientId) {
+                              addClientActivity(clientId, {
+                                  type: 'email',
+                                  title: '📩 Devis envoyé par Mail',
+                                  description: `Le devis a été envoyé à l'administration par ${currentUser?.name}.`,
+                              } as any);
+                          }
                       } catch (e) {
                           alert('Erreur d\'envoi');
                       }
@@ -637,6 +656,15 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                       const msg = `📑 *RAPPORT TERRAIN*\n\n📍 Mission : ${intervention.address}\n👷 Tech : ${currentUser?.name}\n🛠 Matériel : ${parts.length} pièces\n💰 Total : ${total}€\n\n📄 Rapport complet envoyé sur le dashboard.`;
                       sendWhatsAppMessage('0767693804', msg);
                       alert('Rapport WhatsApp envoyé au Manager !');
+
+                      const clientId = intervention.client_id || (assets.find(a => a.id === intervention.asset_id)?.client_id);
+                      if (clientId) {
+                          addClientActivity(clientId, {
+                              type: 'note',
+                              title: '🟢 Alerte WhatsApp Manager',
+                              description: `Rapport envoyé au manager via WhatsApp par ${currentUser?.name}.`,
+                          } as any);
+                      }
                     }}
                 >
                     <MessageSquare className="w-4 h-4 text-[#25D366]" />
@@ -649,6 +677,15 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                       try {
                           await sendPDFByEmail('INVOICE', intervention, inventory);
                           alert('Facture envoyée au bureau !');
+
+                          const clientId = intervention.client_id || (assets.find(a => a.id === intervention.asset_id)?.client_id);
+                          if (clientId) {
+                              addClientActivity(clientId, {
+                                  type: 'email',
+                                  title: '📩 Facture envoyée par Mail',
+                                  description: `La facture a été envoyée à l'administration par ${currentUser?.name}.`,
+                              } as any);
+                          }
                       } catch (e) {
                           alert('Erreur d\'envoi (Vérifiez la clé API)');
                       }
