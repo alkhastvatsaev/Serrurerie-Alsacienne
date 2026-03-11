@@ -13,6 +13,8 @@ import { useStore } from '@/store/useStore';
 import { format, isValid, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { fetchCustomerEmails, GmailMessage } from '@/lib/gmail';
+import { db } from '@/lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 const toDate = (input: any): Date | null => {
     if (!input) return null;
@@ -76,7 +78,29 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
   const rawUsers = useStore(state => state.users);
   const users = React.useMemo(() => Array.isArray(rawUsers) ? rawUsers : [], [rawUsers]);
   const [emails, setEmails] = useState<GmailMessage[]>([]);
+  const [dbActivities, setDbActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (!client?.id) return;
+    
+    const q = query(
+      collection(db, 'clients', client.id, 'activities'),
+      orderBy('timestamp', 'desc')
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const acts = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ActivityItem[];
+      setDbActivities(acts);
+    }, (error) => {
+      console.error("Activities listener error:", error);
+    });
+
+    return () => unsubscribe();
+  }, [client?.id]);
 
   React.useEffect(() => {
     if (client && client.email) {
@@ -100,8 +124,17 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
   const allActivities: ActivityItem[] = React.useMemo(() => {
     if (!client) return [];
     
-    // Safely initialize activities
-    const acts: ActivityItem[] = Array.isArray(client.activities) ? [...client.activities] : [];
+    // 1. Firebase Subcollection Activities
+    let acts: ActivityItem[] = [...dbActivities];
+    
+    // 2. Fallback: Array Activities (for backward compatibility before migration)
+    if (Array.isArray(client.activities)) {
+      client.activities.forEach(oldAct => {
+        if (!acts.some(a => a.id === oldAct.id)) {
+          acts.push(oldAct);
+        }
+      });
+    }
     
     // Add Gmail emails to activities
     if (Array.isArray(emails)) {
@@ -146,7 +179,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
         return 0;
       }
     });
-  }, [client, emails, interventions]);
+  }, [client, emails, interventions, dbActivities]);
 
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
@@ -468,7 +501,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
 
               <div className="space-y-4">
                 <p className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-widest px-2">Notes internes</p>
-                {client.activities?.filter(a => a.type === 'note').map((note, idx) => (
+                {allActivities.filter(a => a.type === 'note').map((note, idx) => (
                   <div key={note.id || idx} className="glass p-4 rounded-2xl border-none shadow-sm space-y-2">
                     <div className="flex justify-between items-center">
                       <p className="text-xs font-bold">{note.title}</p>

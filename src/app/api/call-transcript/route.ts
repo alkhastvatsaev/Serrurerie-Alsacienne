@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, updateDoc, doc, arrayUnion } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export async function POST(req: Request) {
   try {
@@ -69,18 +69,29 @@ export async function POST(req: Request) {
       }
     }
 
+    if (!clientDocId) {
+      // Create new prospect
+      const newClientRef = await addDoc(clientsRef, {
+        name: `🆕 Nouveau Prospect (Appel ${phoneNumber})`,
+        phone: digitsOnly,
+        contact_info: phoneNumber,
+        created_at: serverTimestamp()
+      });
+      clientDocId = newClientRef.id;
+    }
+
+    // Add activity in subcollection
     if (clientDocId) {
-      const activity = {
-        id: `call-${Date.now()}`,
+      const activityId = `call-${Date.now()}`;
+      const activityRef = doc(db, 'clients', clientDocId, 'activities', activityId);
+      
+      await setDoc(activityRef, {
+        id: activityId,
         type: 'call',
         title: '📞 Transcription Appel Auto',
         description: `**Résumé de l'appel :**\n${summary}\n\n**Transcription intégrale :**\n${transcriptText}`,
         timestamp: new Date().toISOString(),
-        icon: 'Phone'
-      };
-
-      await updateDoc(doc(db, 'clients', clientDocId), {
-        activities: arrayUnion(activity)
+        metadata: { direction: 'inbound' }
       });
     }
 

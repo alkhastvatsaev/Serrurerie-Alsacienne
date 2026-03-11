@@ -53,7 +53,7 @@ interface AppState {
   deleteIntervention: (id: string) => Promise<void>;
   decrementStock: (itemId: string, quantity: number) => void;
   addIntervention: (intervention: Intervention) => void;
-  addClientActivity: (clientId: string, activity: Omit<ActivityItem, 'id' | 'timestamp'>) => Promise<void>;
+  addClientActivity: (clientId: string, activity: Partial<ActivityItem> & { type: ActivityItem['type'], title: string, description: string }) => Promise<void>;
   addMessage: (msg: Omit<Message, 'id' | 'timestamp'>) => void;
   updateZones: (zones: Zone[]) => void;
   updateSchedule: (id: string, updates: Partial<WorkSchedule>) => void;
@@ -478,21 +478,23 @@ export const useStore = create<AppState>()((set, get) => ({
   setProfileClient: (client) => set({ currentProfileClient: client }),
   
   addClientActivity: async (clientId, activity) => {
-    const timestamp = new Date().toISOString();
+    const timestamp = activity.timestamp || new Date().toISOString();
     const newActivity: ActivityItem = {
       ...activity,
-      id: Math.random().toString(36).substr(2, 9),
+      id: activity.id || Math.random().toString(36).substr(2, 9),
       timestamp
     };
     
-    const clientRef = doc(db, 'clients', clientId);
-    const client = get().clients.find(c => c.id === clientId);
-    if (client) {
-      const updatedActivities = [newActivity, ...(client.activities || [])];
+    try {
+      const activityRef = doc(db, 'clients', clientId, 'activities', newActivity.id);
+      await setDoc(activityRef, newActivity);
+      
+      const clientRef = doc(db, 'clients', clientId);
       await updateDoc(clientRef, { 
-        activities: updatedActivities,
         last_contact_date: timestamp
       });
+    } catch (e) {
+      console.error("Error adding client activity:", e);
     }
   },
 

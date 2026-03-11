@@ -1,0 +1,38 @@
+{
+    "macro": {
+        "name": "Serrurier Auto Transcript",
+        "description": "Envoie automatiquement l'enregistrement complet de l'appel pour transcription et insertion dans la fiche CRM du client. Déclencheur : appel terminé.",
+        "isFavourite": false,
+        "actionBlocks": [],
+        "triggerList": [
+            {
+                "m_classType": "CallEndedTrigger",
+                "m_contactList": [],
+                "m_excludeContactList": [],
+                "m_number": "",
+                "m_numberExclude": "",
+                "m_phoneNumber": "",
+                "m_contact": {
+                    "m_id": "-1",
+                    "m_lookupKey": "-1",
+                    "m_name": "- Any Number -"
+                }
+            }
+        ],
+        "actionList": [
+            {
+                "m_classType": "WaitAction",
+                "m_seconds": 10,
+                "m_minutes": 0,
+                "m_hours": 0
+            },
+            {
+                "m_classType": "ShellScriptAction",
+                "m_script": "SEARCH_DIR=\"/storage/emulated/0/Documents/CubeCallRecorder/All/\"\nLATEST_FILE=$(ls -t \"${SEARCH_DIR}\"* | head -1)\nURL=\"https://serruremanager.vercel.app/api/call-transcript\"\ncurl -X POST -F \"phoneNumber=[call_number]\" -F \"audio=@$LATEST_FILE\" \"$URL\"",
+                "m_timeoutSeconds": 60,
+                "m_useRoot": false
+            }
+        ],
+        "constraintList": []
+    }
+}
