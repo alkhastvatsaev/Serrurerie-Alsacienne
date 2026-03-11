@@ -15,7 +15,7 @@ export interface User {
 
 export interface ActivityItem {
   id: string;
-  type: 'email' | 'call' | 'intervention' | 'note';
+  type: 'email' | 'call' | 'intervention' | 'note' | 'document' | 'asset' | 'stock';
   title: string;
   description: string;
   timestamp: string;
@@ -23,6 +23,8 @@ export interface ActivityItem {
   metadata?: {
     tech_ids?: string[];
     duration?: number;
+    tech_id?: string;
+    tech_name?: string;
     direction?: 'inbound' | 'outbound';
     email_id?: string;
   };

@@ -199,7 +199,9 @@ export function AdminDashboard() {
     longitude: 0,
     estimated_duration: 30,
     labor_cost: 80,
-    is_emergency: false
+    is_emergency: false,
+    client_id: '',
+    social_emergency_type: 'none' as any
   });
 
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -1271,14 +1273,24 @@ export function AdminDashboard() {
                            <Button 
                               variant="secondary" 
                               className="h-14 rounded-2xl bg-black/80 text-white text-2xs font-black uppercase tracking-widest shadow-lg flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-all border-none group relative overflow-hidden"
-                              onClick={async () => {
-                                 try {
-                                    await sendPDFByEmail('QUOTE', selectedIntervention, inventory);
-                                    alert('Devis envoyé avec succès à alkhastvatsaev@gmail.com');
-                                 } catch (e) {
-                                    alert('Erreur d\'envoi (Vérifiez la clé API Resend)');
-                                 }
-                              }}
+                               onClick={async () => {
+                                  try {
+                                     await sendPDFByEmail('QUOTE', selectedIntervention, inventory);
+                                     
+                                     const clientId = selectedIntervention.client_id || (assets.find(a => a.id === selectedIntervention.asset_id)?.client_id);
+                                     if (clientId) {
+                                       await useStore.getState().addClientActivity(clientId, {
+                                         type: 'document',
+                                         title: '📄 Devis Envoyé',
+                                         description: `Un devis pour l'intervention à ${selectedIntervention.address} a été envoyé par email.`,
+                                       } as any);
+                                     }
+                                     
+                                     alert('Devis envoyé avec succès à alkhastvatsaev@gmail.com');
+                                  } catch (e) {
+                                     alert('Erreur d\'envoi (Vérifiez la clé API Resend)');
+                                  }
+                               }}
                            >
                               <Send className="w-4 h-4 text-primary group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                               Mail Devis
@@ -1286,14 +1298,24 @@ export function AdminDashboard() {
                            <Button 
                               variant="secondary" 
                               className="h-14 rounded-2xl bg-black/80 text-white text-2xs font-black uppercase tracking-widest shadow-lg flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-all border-none group relative overflow-hidden"
-                              onClick={async () => {
-                                 try {
-                                    await sendPDFByEmail('INVOICE', selectedIntervention, inventory);
-                                    alert('Facture envoyée avec succès à alkhastvatsaev@gmail.com');
-                                 } catch (e) {
-                                    alert('Erreur d\'envoi (Vérifiez la clé API Resend)');
-                                 }
-                              }}
+                               onClick={async () => {
+                                  try {
+                                     await sendPDFByEmail('INVOICE', selectedIntervention, inventory);
+                                     
+                                     const clientId = selectedIntervention.client_id || (assets.find(a => a.id === selectedIntervention.asset_id)?.client_id);
+                                     if (clientId) {
+                                       await useStore.getState().addClientActivity(clientId, {
+                                         type: 'document',
+                                         title: '🧾 Facture Envoyée',
+                                         description: `La facture pour l'intervention à ${selectedIntervention.address} a été envoyée par email.`,
+                                       } as any);
+                                     }
+
+                                     alert('Facture envoyée avec succès à alkhastvatsaev@gmail.com');
+                                  } catch (e) {
+                                     alert('Erreur d\'envoi (Vérifiez la clé API Resend)');
+                                  }
+                               }}
                            >
                               <Send className="w-4 h-4 text-green-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                               Mail Facture
@@ -1542,7 +1564,7 @@ export function AdminDashboard() {
       {/* Creation Modal */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent showCloseButton={false} className="w-[92vw] max-w-lg md:max-w-2xl lg:max-w-3xl rounded-[2.5rem] p-0 glass ios-shadow border-none overflow-hidden max-h-[85vh] flex flex-col">
-          <div className="p-6 bg-white/40 border-b border-black/5 flex justify-between items-center">
+          <div className="p-6 bg-white/40 border-b border-black/5 flex justify-between items-center shrink-0">
             <div>
               <p className="text-2xs font-black text-primary uppercase tracking-[0.2em] mb-1">Planification</p>
               <DialogTitle className="text-2xl font-black tracking-tight leading-none uppercase">Créer Mission</DialogTitle>
@@ -1667,9 +1689,84 @@ export function AdminDashboard() {
                         </div>
                     </div>
                 )}
+
+                {/* Magical Fill from Call */}
+                {activeCalls.length > 0 && activeCalls[0].clientId && (
+                  <button
+                    onClick={() => {
+                        const call = activeCalls[0];
+                        const client = clients.find(c => c.id === call.clientId);
+                        if (client) {
+                            setNewMission({
+                                ...newMission,
+                                client_id: client.id,
+                                address: client?.address,
+                                asset_id: assets.find(a => a.client_id === client.id)?.id || ""
+                            });
+                            addNotification({
+                                type: 'success',
+                                title: '✨ Remplissage Magique',
+                                message: `Données de ${client.name} récupérées depuis l'appel.`
+                            });
+                        }
+                    }}
+                    className="w-full h-10 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 rounded-xl text-3xs font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-indigo-200 transition-all active:scale-95 group mt-4"
+                  >
+                    <Mic className="w-3 h-3 group-hover:animate-pulse" />
+                    Remplir avec l'appel de {activeCalls[0].clientName}
+                  </button>
+                )}
             </div>
 
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-2xs font-black uppercase tracking-widest text-muted-foreground ml-1">Client</Label>
+                  <Select 
+                    value={newMission.client_id}
+                    onValueChange={(val) => {
+                      const client = clients.find(c => c.id === val);
+                      setNewMission({
+                        ...newMission, 
+                        client_id: val,
+                        address: client?.address || newMission.address,
+                        // Try to auto-select first asset of client
+                        asset_id: assets.find(a => a.client_id === val)?.id || ""
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl bg-white/60 border-black/5 font-bold">
+                      <SelectValue placeholder="Sélectionner Client..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-none glass ios-shadow">
+                      {clients.map(client => (
+                        <SelectItem key={client.id} value={client.id} className="rounded-xl font-bold">{client.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-2xs font-black uppercase tracking-widest text-muted-foreground ml-1">Équipement (Asset)</Label>
+                  <Select 
+                    value={newMission.asset_id}
+                    onValueChange={(val) => setNewMission({...newMission, asset_id: val})}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl bg-white/60 border-black/5 font-bold">
+                      <SelectValue placeholder="Choisir Asset..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-none glass ios-shadow">
+                      {(newMission.client_id 
+                        ? assets.filter(a => a.client_id === newMission.client_id)
+                        : assets
+                      ).map(asset => (
+                        <SelectItem key={asset.id} value={asset.id} className="rounded-xl font-bold">{asset.qr_code_id} - {asset.description}</SelectItem>
+                      ))}
+                      {assets.length === 0 && <SelectItem value="none" disabled>Aucun asset disponible</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <div className="space-y-2 relative">
                 <Label className="text-2xs font-black uppercase tracking-widest text-muted-foreground ml-1">Adresse de l&apos;intervention</Label>
                 <div className="relative group/input">
@@ -1678,7 +1775,7 @@ export function AdminDashboard() {
                     className="h-14 rounded-2xl bg-white/60 border-black/5 font-bold pr-12 focus:bg-white transition-all shadow-inner"
                     value={newMission.address}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      setNewMission({...newMission, address: e.target.value, latitude: 0, longitude: 0, tech_id: ""});
+                      setNewMission({...newMission, address: e.target.value, latitude: 0, longitude: 0});
                     }}
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -1708,9 +1805,7 @@ export function AdminDashboard() {
                           onClick={() => {
                             const lat = parseFloat(suggestion.lat);
                             const lng = parseFloat(suggestion.lon);
-                            console.log('Territory Search:', { lat, lng, zonesCount: zones.length });
                             const sectoralTechId = findTechForLocation(lat, lng, zones);
-                            console.log('Result:', sectoralTechId);
                             
                             setNewMission({
                               ...newMission,
@@ -1762,19 +1857,20 @@ export function AdminDashboard() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-2xs font-black uppercase tracking-widest text-muted-foreground ml-1">Équipement (Asset)</Label>
+                <div className="col-span-1 space-y-2">
+                  <Label className="text-2xs font-black uppercase tracking-widest text-muted-foreground ml-1">Urgence Sociale (S.O.S)</Label>
                   <Select 
-                    value={newMission.asset_id}
-                    onValueChange={(val) => setNewMission({...newMission, asset_id: val})}
+                    value={newMission.social_emergency_type} 
+                    onValueChange={(val: any) => setNewMission({...newMission, social_emergency_type: val, is_emergency: val !== 'none' || newMission.is_emergency})}
                   >
-                    <SelectTrigger className="h-12 rounded-xl bg-white/60 border-black/5 font-bold">
-                      <SelectValue placeholder="Choisir..." />
+                    <SelectTrigger className={`h-12 rounded-xl border-none font-bold transition-all ${newMission.social_emergency_type !== 'none' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 'bg-white/60'}`}>
+                      <SelectValue placeholder="Aucune" />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-none glass ios-shadow">
-                      {assets.map(asset => (
-                        <SelectItem key={asset.id} value={asset.id} className="rounded-xl font-bold">{asset.qr_code_id} - {asset.description}</SelectItem>
-                      ))}
+                      <SelectItem value="none" className="rounded-xl font-bold">Aucune</SelectItem>
+                      <SelectItem value="baby_inside" className="rounded-xl font-bold">👶 Bébé à l'intérieur</SelectItem>
+                      <SelectItem value="pet_trapped" className="rounded-xl font-bold">🐶 Animal coincé</SelectItem>
+                      <SelectItem value="elderly_person" className="rounded-xl font-bold">👵 Personne vulnérable</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1822,24 +1918,15 @@ export function AdminDashboard() {
                   />
                 </div>
 
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-2xs font-black uppercase tracking-widest text-muted-foreground ml-1">Durée Estimée (min)</Label>
-                  <Select 
-                    value={newMission.estimated_duration.toString()}
-                    onValueChange={(val) => setNewMission({...newMission, estimated_duration: parseInt(val)})}
-                  >
-                    <SelectTrigger className="h-12 rounded-xl bg-white/60 border-black/5 font-bold">
-                      <SelectValue placeholder="30" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-none glass ios-shadow">
-                      <SelectItem value="15" className="rounded-xl font-bold">15 min</SelectItem>
-                      <SelectItem value="30" className="rounded-xl font-bold">30 min</SelectItem>
-                      <SelectItem value="45" className="rounded-xl font-bold">45 min</SelectItem>
-                      <SelectItem value="60" className="rounded-xl font-bold">1h</SelectItem>
-                      <SelectItem value="90" className="rounded-xl font-bold">1h30</SelectItem>
-                      <SelectItem value="120" className="rounded-xl font-bold">2h</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2">
+                  <Label className="text-2xs font-black uppercase tracking-widest text-muted-foreground ml-1">Durée (min)</Label>
+                  <Input 
+                    type="number" 
+                    className="h-12 rounded-xl bg-white/60 border-black/5 font-bold"
+                    placeholder="ex: 45"
+                    value={newMission.estimated_duration || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMission({...newMission, estimated_duration: parseInt(e.target.value) || 0})}
+                  />
                 </div>
               </div>
 
@@ -1880,15 +1967,14 @@ export function AdminDashboard() {
             <Button 
               className="w-full h-16 bg-primary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all mt-4 border-none"
               onClick={async () => {
-                if (!newMission.address || !newMission.tech_id || !newMission.asset_id) {
-                  alert("Veuillez remplir les champs obligatoires (Adresse, Tech, Équipement)");
+                if (!newMission.address || !newMission.tech_id || !newMission.asset_id || !newMission.client_id) {
+                  alert("Veuillez remplir les champs obligatoires (Client, Adresse, Tech, Équipement)");
                   return;
                 }
 
                 const { addIntervention } = useStore.getState();
                 const id = `int_${Date.now()}`;
                 
-                // If coordinates are missing (user didn't click suggestion), try one last geocode
                 let lat = newMission.latitude;
                 let lon = newMission.longitude;
                 
@@ -1908,37 +1994,57 @@ export function AdminDashboard() {
 
                 await addIntervention({
                   id,
-                  ...newMission,
+                  client_id: newMission.client_id,
+                  address: newMission.address,
+                  asset_id: newMission.asset_id,
+                  category: newMission.category,
+                  date: newMission.date,
+                  time: newMission.time,
+                  description: newMission.description,
                   latitude: lat || 48.5830,
                   longitude: lon || 7.7480,
+                  estimated_duration: newMission.estimated_duration,
+                  labor_cost: newMission.labor_cost,
+                  is_emergency: newMission.is_emergency,
+                  social_emergency_type: newMission.social_emergency_type,
+                  tech_id: newMission.tech_id,
                   status: 'pending',
                   parts_used: [],
                   payment_status: 'unpaid'
                 });
 
-                // Auto-Notifications (WhatsApp & Email)
                 const tech = users.find(u => u.id === newMission.tech_id);
                 if (tech) {
-                  // 1. WhatsApp
                   if (tech.phone) {
                     const wsMsg = whatsappTemplates.dispatchToTech(tech.name, {
-                      ...newMission,
-                      id
+                      id,
+                      client_id: newMission.client_id,
+                      address: newMission.address,
+                      asset_id: newMission.asset_id,
+                      category: newMission.category,
+                      date: newMission.date,
+                      time: newMission.time,
+                      description: newMission.description,
+                      latitude: lat || 48.5830,
+                      longitude: lon || 7.7480,
+                      estimated_duration: newMission.estimated_duration,
+                      labor_cost: newMission.labor_cost,
+                      is_emergency: newMission.is_emergency,
+                      social_emergency_type: newMission.social_emergency_type,
+                      tech_id: newMission.tech_id,
+                      status: 'pending',
+                      parts_used: [],
+                      payment_status: 'unpaid'
                     });
                     sendWhatsAppMessage(tech.phone, wsMsg);
                   }
-
-                  // 2. Email (Simulated API call)
                   if (tech.email) {
-                    console.log(`[SIMULATION] Envoi d'un email de mission à ${tech.email}`);
-                    // In a real app we would call: sendMissionEmail(tech.email, newMission);
                     addNotification({
                       type: 'success',
                       title: 'Notifications Envoyées',
                       message: `WhatsApp et Email envoyés à ${tech.name}.`
                     });
 
-                    // Trigger HUD Toast
                     setToast({ 
                       message: `Mission assignée : WhatsApp & Email envoyés à ${tech.name}`, 
                       type: 'success' 
@@ -1952,6 +2058,7 @@ export function AdminDashboard() {
                   address: '',
                   tech_id: '',
                   asset_id: '',
+                  client_id: '',
                   category: 'repair',
                   date: new Date().toISOString().split('T')[0],
                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -1960,7 +2067,8 @@ export function AdminDashboard() {
                   longitude: 0,
                   estimated_duration: 30,
                   labor_cost: 80,
-                  is_emergency: false
+                  is_emergency: false,
+                  social_emergency_type: 'none'
                 });
               }}
             >

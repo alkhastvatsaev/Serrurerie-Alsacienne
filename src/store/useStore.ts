@@ -69,6 +69,7 @@ interface AppState {
   initSentinel: () => void;
   addClient: (client: Omit<Client, 'id'>) => Promise<string | undefined>;
   updateClient: (id: string, updates: Partial<Client>) => Promise<void>;
+  deleteClient: (id: string) => Promise<void>;
   dismissCall: (callId: string) => Promise<void>;
 }
 
@@ -566,6 +567,39 @@ export const useStore = create<AppState>()((set, get) => ({
                       description: `Le client a appelé à ${new Date().toLocaleTimeString('fr-FR')}.`,
                       metadata: { direction: 'inbound' }
                     } as any);
+                  } else if (latestCall.phoneNumber) {
+                    // Try to find if client exists by phone (even if clientId not set on call doc)
+                    const cleanCallPhone = latestCall.phoneNumber.replace(/[\s\.\-\(\)]/g, '');
+                    const existingClient = get().clients.find(c => {
+                        const cleanCPhone = (c.phone || c.contact_info || '').replace(/[\s\.\-\(\)]/g, '');
+                        return cleanCPhone.length > 5 && cleanCPhone.includes(cleanCallPhone);
+                    });
+                    
+                    if (existingClient) {
+                      get().addClientActivity(existingClient.id, {
+                        type: 'call',
+                        title: 'Appel Entrant Reçu',
+                        description: `Le client a appelé à ${new Date().toLocaleTimeString('fr-FR')}.`,
+                        metadata: { direction: 'inbound' }
+                      } as any);
+                    } else {
+                      // Automatiquement créer un nouveau prospect pour garder une trace
+                      get().addClient({
+                        name: `🆕 Nouveau (Appel ${latestCall.phoneNumber})`,
+                        phone: latestCall.phoneNumber,
+                        contact_info: latestCall.phoneNumber,
+                        address: 'Adresse à renseigner'
+                      }).then(newId => {
+                        if (newId) {
+                           get().addClientActivity(newId, {
+                             type: 'call',
+                             title: 'Premier Appel (Nouveau Prospect)',
+                             description: `Premier contact détecté via appel à ${new Date().toLocaleTimeString('fr-FR')}. Fiche créée automatiquement.`,
+                             metadata: { direction: 'inbound' }
+                           } as any);
+                        }
+                      });
+                    }
                   }
                 }
               }
@@ -755,6 +789,21 @@ export const useStore = create<AppState>()((set, get) => ({
       await updateDoc(clientRef, cleanUpdates);
     } catch (e) {
       console.error("Error updating client: ", e);
+    }
+  },
+
+  deleteClient: async (id: string) => {
+    try {
+      const clientRef = doc(db, 'clients', id);
+      await deleteDoc(clientRef);
+      // Also cleanup assets and interventions related to this client? 
+      // For now just client.
+      set((state) => ({
+        clients: state.clients.filter((c) => c.id !== id),
+        currentProfileClient: state.currentProfileClient?.id === id ? null : state.currentProfileClient
+      }));
+    } catch (e) {
+      console.error("Error deleting client: ", e);
     }
   },
 

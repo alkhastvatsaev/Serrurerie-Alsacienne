@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Phone, Mail, MapPin, History, Calendar, User, 
   ChevronRight, ExternalLink, MessageSquare, Clock, 
-  ArrowUpRight, ArrowDownLeft, FileText, CheckCircle
+  ArrowUpRight, ArrowDownLeft, FileText, CheckCircle,
+  Edit, Save, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Client, ActivityItem, Intervention } from '@/types';
 import { useStore } from '@/store/useStore';
 import { format, isValid, parseISO } from 'date-fns';
@@ -53,6 +55,13 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
   }
 
   const [activeTab, setActiveTab] = useState<'activity' | 'history' | 'notes'>('activity');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedClient, setEditedClient] = useState({
+    name: client.name || '',
+    phone: client.phone || client.contact_info || '',
+    email: client.email || '',
+    address: client.address || ''
+  });
   const allInterventions = useStore(state => state.interventions);
   const interventions = React.useMemo(() => {
     if (!Array.isArray(allInterventions)) return [];
@@ -159,37 +168,113 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
       className="h-full flex flex-col bg-white border-l border-black/5 shadow-2xl relative z-50 w-full max-w-md"
     >
       {/* Header */}
-      <div className="p-6 border-b border-black/5 bg-gradient-to-br from-black/[0.02] to-transparent">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
-              <User className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-lg font-black tracking-tight">{client.name || "Client"}</h2>
-              <p className="text-3xs font-medium text-muted-foreground uppercase tracking-widest">Fiche Client</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-xl transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+       <div className="p-6 border-b border-black/5 bg-gradient-to-br from-black/[0.02] to-transparent">
+         <div className="flex justify-between items-start mb-4">
+           <div className="flex items-center gap-3">
+             <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+               <User className="w-6 h-6 text-primary" />
+             </div>
+             <div>
+               {isEditing ? (
+                 <Input 
+                   className="h-8 font-black tracking-tight text-lg p-0 bg-transparent border-none focus-visible:ring-0" 
+                   value={editedClient.name}
+                   onChange={e => setEditedClient({...editedClient, name: e.target.value})}
+                   placeholder="Nom du client"
+                 />
+               ) : (
+                 <h2 className="text-lg font-black tracking-tight">{client.name || "Client"}</h2>
+               )}
+               <p className="text-3xs font-medium text-muted-foreground uppercase tracking-widest">Fiche Client</p>
+             </div>
+           </div>
+           <div className="flex items-center gap-1">
+             {isEditing ? (
+               <button 
+                 onClick={async () => {
+                   await useStore.getState().updateClient(client.id, {
+                     name: editedClient.name,
+                     phone: editedClient.phone,
+                     contact_info: editedClient.phone,
+                     email: editedClient.email,
+                     address: editedClient.address
+                   });
+                   setIsEditing(false);
+                 }}
+                 className="p-2 hover:bg-green-50 text-green-600 rounded-xl transition-colors"
+                 title="Enregistrer"
+               >
+                 <Save className="w-5 h-5" />
+               </button>
+             ) : (
+               <button 
+                 onClick={() => setIsEditing(true)}
+                 className="p-2 hover:bg-black/5 text-muted-foreground hover:text-black rounded-xl transition-colors"
+                 title="Modifier"
+               >
+                 <Edit className="w-4 h-4" />
+               </button>
+             )}
+             <button 
+                onClick={async () => {
+                  if (confirm("Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.")) {
+                    await useStore.getState().deleteClient(client.id);
+                    onClose();
+                  }
+                }}
+                className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors" 
+                title="Supprimer"
+             >
+                <Trash2 className="w-4 h-4" />
+             </button>
+             <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-xl transition-colors ml-1">
+               <X className="w-5 h-5" />
+             </button>
+           </div>
+         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/80">
-            <Phone className="w-3.5 h-3.5" />
-            <span>{client.phone || client.contact_info || "Sans numéro"}</span>
-          </div>
-          <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/80">
-            <Mail className="w-3.5 h-3.5" />
-            <span>{typeof client?.email === 'string' ? client.email : "Non renseigné"}</span>
-          </div>
-          <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/80">
-            <MapPin className="w-3.5 h-3.5" />
-            <span className="line-clamp-1">{typeof client?.address === 'string' ? client.address : "Sans adresse"}</span>
-          </div>
-        </div>
-      </div>
+         <div className="space-y-3">
+           <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/80">
+             <Phone className="w-3.5 h-3.5" />
+             {isEditing ? (
+               <Input 
+                 className="h-7 text-xs p-1 bg-white/50 border-black/5 rounded-md"
+                 value={editedClient.phone}
+                 onChange={e => setEditedClient({...editedClient, phone: e.target.value})}
+                 placeholder="Téléphone"
+               />
+             ) : (
+               <span>{client.phone || client.contact_info || "Sans numéro"}</span>
+             )}
+           </div>
+           <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/80">
+             <Mail className="w-3.5 h-3.5" />
+             {isEditing ? (
+               <Input 
+                 className="h-7 text-xs p-1 bg-white/50 border-black/5 rounded-md"
+                 value={editedClient.email}
+                 onChange={e => setEditedClient({...editedClient, email: e.target.value})}
+                 placeholder="Email"
+               />
+             ) : (
+               <span>{typeof client?.email === 'string' ? client.email : "Non renseigné"}</span>
+             )}
+           </div>
+           <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/80">
+             <MapPin className="w-3.5 h-3.5" />
+             {isEditing ? (
+               <Input 
+                 className="h-7 text-xs p-1 bg-white/50 border-black/5 rounded-md"
+                 value={editedClient.address}
+                 onChange={e => setEditedClient({...editedClient, address: e.target.value})}
+                 placeholder="Adresse"
+               />
+             ) : (
+               <span className="line-clamp-1">{typeof client?.address === 'string' ? client.address : "Sans adresse"}</span>
+             )}
+           </div>
+         </div>
+       </div>
 
       {/* Tabs */}
       <div className="flex px-6 border-b border-black/5 bg-white sticky top-0 z-10">
