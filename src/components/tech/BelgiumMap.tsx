@@ -128,7 +128,6 @@ export default function BelgiumMap({
             color: "transparent", 
             weight: 0 
           }} 
-          zIndex={1000}
         />
 
         {/* 2. BELGIUM BORDER GLOW */}

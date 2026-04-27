@@ -268,7 +268,6 @@ const MapContent = ({
                     color: "transparent", 
                     weight: 0 
                 }} 
-                zIndex={9999}
             />
 
             {/* 3. BELGIUM BORDER GLOW */}
