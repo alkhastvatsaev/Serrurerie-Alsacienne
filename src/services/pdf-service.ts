@@ -26,7 +26,7 @@ const calculateTotals = (intervention: Intervention, inventory: InventoryItem[])
 
   const partsTotal = parts.reduce((sum, p) => sum + p.total, 0);
   const laborTotal = intervention.labor_cost || 0;
-  const travelTotal = intervention.travel_cost || 0;
+  const travelTotal = 0;
   const totalHT = partsTotal + laborTotal + travelTotal;
   const totalTVA = totalHT * 0.21; // TVA Belge par défaut
   const totalTTC = totalHT + totalTVA;
