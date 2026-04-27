@@ -15,11 +15,12 @@ const COMPANY_INFO = {
 const calculateTotals = (intervention: Intervention, inventory: InventoryItem[]) => {
   const parts = intervention.parts_used.map(pu => {
     const item = inventory.find(i => i.id === pu.item_id);
+    const price = item?.price ?? 0;
     return {
-      name: item?.name || 'Pièce inconnue',
-      price: pu.priceAtTime,
+      name: item?.item_name || 'Pièce inconnue',
+      price,
       quantity: pu.quantity,
-      total: pu.priceAtTime * pu.quantity
+      total: price * pu.quantity
     };
   });
 
