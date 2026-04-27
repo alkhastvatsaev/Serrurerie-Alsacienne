@@ -109,7 +109,7 @@ export const downloadPDF = async (type: 'QUOTE' | 'INVOICE' | 'INTERVENTION', in
   doc.save(fileName);
 };
 
-export const sendPDFByEmail = async (type: string, intervention: Intervention) => {
+export const sendPDFByEmail = async (type: string, intervention: Intervention, inventory: InventoryItem[]) => {
   console.log(`Sending ${type} for intervention ${intervention.id} by email...`);
   // Mock implementation
   return new Promise(resolve => setTimeout(resolve, 1000));
