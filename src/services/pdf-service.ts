@@ -14,7 +14,7 @@ const COMPANY_INFO = {
 
 const calculateTotals = (intervention: Intervention, inventory: InventoryItem[]) => {
   const parts = intervention.parts_used.map(pu => {
-    const item = inventory.find(i => i.id === pu.itemId);
+    const item = inventory.find(i => i.id === pu.item_id);
     return {
       name: item?.name || 'Pièce inconnue',
       price: pu.priceAtTime,
