@@ -66,7 +66,7 @@ export const downloadPDF = async (type: 'QUOTE' | 'INVOICE' | 'INTERVENTION', in
   doc.setFont('helvetica', 'bold');
   doc.text('CLIENT:', 20, 65);
   doc.setFont('helvetica', 'normal');
-  doc.text(intervention.client_id, 20, 70);
+  doc.text(intervention.client_id ?? '—', 20, 70);
 
   // Intervention Details
   doc.setFont('helvetica', 'bold');
