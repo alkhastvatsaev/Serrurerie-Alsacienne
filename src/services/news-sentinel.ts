@@ -1,7 +1,7 @@
 
 import { SecurityIncident } from "@/services/ai-agent";
 
-// Advanced Sentinel System for Strasbourg News Intelligence
+// Advanced Sentinel System for Belgium News Intelligence
 // Simulates a high-tech "listening" system that aggregates Fire, Police, and Social Media feeds.
 
 export interface NewsSentinelConfig {
@@ -20,7 +20,7 @@ export interface SentinelEvent extends SecurityIncident {
   detectedKeywords?: string[];
 }
 
-// 1. STRASBOURG GEO-ZONES (High precision for accurate plotting)
+// 1. BRUSSELS GEO-ZONES (High precision for accurate plotting)
 // Constants removed - using real API data.
 
 // 3. THE SENTINEL ENGINE
@@ -40,7 +40,7 @@ export class NewsSentinel {
             timestamp: new Date(item.timestamp).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
             latitude: item.latitude,
             longitude: item.longitude,
-            source: 'DNA / Google News',
+            source: 'Le Soir / RTBF / Google News',
             sourceUrl: item.url,
             urgency: item.metadata?.priority === 'high' ? 'high' : 'medium',
             isVerified: true,

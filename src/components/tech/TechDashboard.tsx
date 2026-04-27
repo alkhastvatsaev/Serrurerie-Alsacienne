@@ -15,8 +15,8 @@ import { InterventionDetails } from "./InterventionDetails";
 import { calculatePriceBreakdown, formatPrice } from "@/lib/pricing";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AssetSheet } from "./AssetSheet";
-import { identifyLockFromImage } from "@/lib/gemini";
-import { sendWhatsAppMessage, whatsappTemplates } from "@/lib/whatsapp";
+import { identifyLockFromImage } from "@/services/gemini";
+import { sendWhatsAppMessage, whatsappTemplates } from "@/services/whatsapp";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function TechDashboard() {
@@ -264,8 +264,10 @@ export function TechDashboard() {
               <p className="text-lg font-black tracking-tight text-foreground">{currentTime}</p>
             </div>
             <div className="flex items-center gap-1 text-muted-foreground/50">
-              <Sun className="w-3 h-3" />
-              <span className="text-[9px] font-bold">4°C • Strasbourg</span>
+              <div className="flex flex-col items-end">
+                <span className="text-[9px] font-bold">12°C • Bruxelles</span>
+                <span className="text-[8px] text-muted-foreground/40">Ciel couvert</span>
+              </div>
             </div>
           </div>
         </div>

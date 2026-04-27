@@ -2,38 +2,39 @@
 "use client";
 
 import { useStore } from "@/store/useStore";
-import { User, Intervention } from "@/types";
+import { Intervention } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+// UI Components
 import { 
-  Truck, Settings, LayoutDashboard, History as HistoryIcon, 
-  MessageCircle, ClipboardCheck,
-  CheckCircle, ChevronUp, ChevronDown, X, MapPin,
-   Eye, Send, AlertTriangle, Plus, Crosshair, Clock, User as UserIcon,
-   BrainCircuit, Sparkles, Save, Bell, ChevronLeft, ChevronRight, RotateCcw,
-   FileText, Download, Printer, ArrowDownCircle, ShoppingBag, Package, BadgeEuro, UserCircle, Info,
-   Building2, Home, Briefcase, MessageSquare, Users, Calendar, Megaphone, BarChart3,
-    Moon, Zap, CloudRain, ShieldCheck,
-    ExternalLink, Globe, MousePointerClick, Search, LineChart, ShieldAlert, Trophy, Star,
-    CreditCard, Euro, Wallet, PieChart, Menu, LayoutGrid, TrendingUp, Receipt, Phone, Mail,
-    Mic, Loader2, Square, Activity, ArrowRight
+  Settings, LayoutDashboard, History as HistoryIcon, 
+  ClipboardCheck,
+  CheckCircle, X, MapPin,
+  Send, AlertTriangle, Plus, Crosshair, Clock,
+   BrainCircuit, Sparkles, Save, ChevronRight, RotateCcw,
+   FileText, Download,
+   Users, Calendar, Megaphone,
+    Zap, ShieldCheck,
+    Globe, MousePointerClick, Search, LineChart, ShieldAlert, Trophy,
+    CreditCard, Euro, Wallet, PieChart, TrendingUp, Receipt, Phone, Mail,
+    Mic, Square, Activity
 } from "lucide-react";
-import { downloadPDF, sendPDFByEmail } from "@/lib/pdf-service";
-import { exportToCSV } from "@/lib/export-service";
-import { sendWhatsAppMessage, whatsappTemplates } from "@/lib/whatsapp";
+import { downloadPDF, sendPDFByEmail } from "@/services/pdf-service";
+import { exportToCSV } from "@/services/export-service";
+import { sendWhatsAppMessage, whatsappTemplates } from "@/services/whatsapp";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Tabs removed as they were not used in this version
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AIDispatchAgent, SecurityScanningAgent, SecurityIncident } from "@/services/ai-agent";
+import { AIDispatchAgent } from "@/services/ai-agent";
 import { findTechForLocation } from "@/lib/geo-utils";
 import { calculatePriceBreakdown, formatPrice } from "@/lib/pricing";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { CustomerProfile } from "./CustomerProfile";
 import { ErrorBoundary } from "../ErrorBoundary";
-import { useState, useMemo, useEffect, Fragment, useRef } from "react";
-import { Notification } from "@/types";
+import { useState, useMemo, useEffect, Fragment, useRef, ChangeEvent, useCallback } from "react";
+// Notification type removed as it is imported from @/types via other means if needed
 
 import { AnimatePresence, motion } from "framer-motion";
 import { 
@@ -45,23 +46,22 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "../ui/textarea";
 import { Label } from "@/components/ui/label";
-import { getTechColor, getStatusColor, GLASS_STYLES } from '@/lib/theme';
+// Theme helpers removed if unused
 
-const InteractiveMap = dynamic(() => import("./InteractiveMap"), { 
+const BelgiumMap = dynamic(() => import("../tech/BelgiumMap"), { 
   ssr: false,
-  loading: () => <div className="fixed inset-0 bg-secondary/30 animate-pulse flex items-center justify-center">Chargement de la carte...</div>
+  loading: () => <div className="fixed inset-0 bg-secondary/30 animate-pulse flex items-center justify-center">Chargement de la carte Belgique...</div>
 });
 
-// 🚀 STRASBOURG Serrurerie Alsacienne OS - ULTRA-ROI VERSION
+// 🚀 BELGIQUE Serrurerie Pro OS - EXCELLENCE VERSION
 // Purged of non-essential features for maximum performance.
 
 export function AdminDashboard() {
   const { 
-    inventory, assets, interventions, users, messages, 
-    addMessage, currentUser, setCurrentUser, vanStocks, 
-    notifications, markNotificationsAsRead, updateZones, zones,
-    initSentinel, securityIncidents,
-    addNotification, schedules, transferVanStock, simulateClientTracking,
+    inventory, assets, interventions, users, 
+    currentUser, setCurrentUser, vanStocks, 
+    zones,
+    addNotification, schedules, 
     currentProfileClient, setProfileClient, activeCalls, clients, dismissCall,
     updateIntervention
   } = useStore();
@@ -69,10 +69,7 @@ export function AdminDashboard() {
   const [isGlobalPlanningOpen, setIsGlobalPlanningOpen] = useState(false);
 
   // MIGRATION: Logic removed as data is now handled by Firestore listeners and DUMMY_USERS seed.
-  const [chatInput, setChatInput] = useState("");
-  const [isNotifCenterOpen, setIsNotifCenterOpen] = useState(false);
   const [lastWaitingCount, setLastWaitingCount] = useState(0);
-  const [hasNewArchive, setHasNewArchive] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState<Array<{ display_name: string, lat: string, lon: string }>>([]);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
@@ -166,8 +163,9 @@ export function AdminDashboard() {
       exportToCSV(interventions, inventory);
       setToast({ message: "Export comptable (CSV) généré avec succès.", type: 'success' });
       setTimeout(() => setToast(null), 3000);
-    } catch (error: any) {
-      setToast({ message: error.message || "Erreur lors de l'export.", type: 'info' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur lors de l&apos;export.";
+      setToast({ message, type: 'info' });
       setTimeout(() => setToast(null), 3000);
     }
   };
@@ -201,7 +199,7 @@ export function AdminDashboard() {
     labor_cost: 80,
     is_emergency: false,
     client_id: '',
-    social_emergency_type: 'none' as any
+    social_emergency_type: 'none' as Intervention['social_emergency_type']
   });
 
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -212,8 +210,8 @@ export function AdminDashboard() {
   
   const [marketIntel] = useState([
     { name: 'Serrurier Express 67', status: 'aggressive', ads: 12, topAbs: '45%' },
-    { name: 'Depannage Alsace 24/7', status: 'moderate', ads: 5, topAbs: '12%' },
-    { name: 'Artisan Pro Strasbourg', status: 'low', ads: 2, topAbs: '5%' }
+    { name: 'Dépannage Bruxelles 24/7', status: 'moderate', ads: 5, topAbs: '12%' },
+    { name: 'Artisan Pro Bruxelles', status: 'low', ads: 2, topAbs: '5%' }
   ]);
   
   const [antiFraudStats] = useState({
@@ -223,30 +221,8 @@ export function AdminDashboard() {
   });
 
   // Simulated Live Locations for "Nearby Stock Opti"
-  const [techLocations] = useState({
-    '2': { lat: 48.5833, lng: 7.7458, name: 'Marc' },      // Centre
-    '3': { lat: 48.6000, lng: 7.7500, name: 'Sophie' },    // Nord
-    '4': { lat: 48.5600, lng: 7.7400, name: 'Lucas' },     // Sud
-  });
-
-  const [stockOptimizationAlerts, setStockOptimizationAlerts] = useState<{from: string, to: string, item: string, itemId: string, distance: string}[]>([]);
-
   useEffect(() => {
-    // Logic to find pairs of techs who are near (< 2km) 
-    // and where one has spare stock (> min_threshold + 5) 
-    // and another is below threshold
-    const alerts: any[] = [];
-    
-    // Hardcoded demo alert for verification
-    alerts.push({
-      from: '2', // Marc
-      to: '4',   // Lucas
-      item: 'Cylindre Mul-T-Lock MT5+',
-      itemId: 'i1',
-      distance: '850m'
-    });
-    
-    setStockOptimizationAlerts(alerts);
+    // Logic for stock optimization removed if unused
   }, []);
 
   
@@ -262,16 +238,16 @@ export function AdminDashboard() {
     const timer = setTimeout(async () => {
       setIsSearchingAddress(true);
       try {
-        // Use a more robust Nominatim query with Strasbourg context
-        // Limit search to Strasbourg and surroundings
-        const query = `${newMission.address}, Strasbourg, France`;
+        // Use a more robust Nominatim query with Brussels context
+        // Limit search to Brussels and surroundings
+        const query = `${newMission.address}, Brussels, Belgium`;
 
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&viewbox=7.68,48.50,7.85,48.65&bounded=1`,
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&viewbox=4.28,50.79,4.45,50.91&bounded=1`,
           {
             headers: {
               'Accept-Language': 'fr-FR,fr;q=0.9',
-              'User-Agent': 'SerrurerieAlsacienne-Admin-Dashboard/1.0'
+              'User-Agent': 'SerrurerieBruxelloise-Admin-Dashboard/1.0'
             }
           }
         );
@@ -299,21 +275,20 @@ export function AdminDashboard() {
     // Trigger notification toggle logic (background)
     if (waitingCount > lastWaitingCount) {
       // Logic for new archival arrival or validation
-      setHasNewArchive(true);
     }
 
     setLastWaitingCount(waitingCount);
   }, [interventions, lastWaitingCount]);
 
-  const calculateIntTotal = (int: Intervention | null) => {
+  const calculateIntTotal = useCallback((int: Intervention | null) => {
     if (!int) return 0;
     return calculatePriceBreakdown(int, inventory).total;
-  };
+  }, [inventory]);
 
-  const getPriceBreakdown = (int: Intervention | null) => {
+  const getPriceBreakdown = useCallback((int: Intervention | null) => {
     if (!int) return { labor: 0, partsTotal: 0, emergencySurcharge: 0, commercialDiscount: 0, total: 0 };
     return calculatePriceBreakdown(int, inventory);
-  };
+  }, [inventory]);
 
   const today = new Date().toISOString().split('T')[0];
   const activeInterventions = interventions.filter(i => i.status !== 'done');
@@ -322,7 +297,7 @@ export function AdminDashboard() {
     return interventions.filter(i => i.status === 'done' && i.date === today).reduce((total, int) => {
       return total + calculateIntTotal(int);
     }, 0);
-  }, [interventions, inventory, today]);
+  }, [interventions, today, calculateIntTotal]);
 
   const monthlyCA = useMemo(() => {
     const now = new Date();
@@ -334,18 +309,17 @@ export function AdminDashboard() {
         return i.status === 'done' && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
       })
       .reduce((acc, current) => acc + calculateIntTotal(current), 0);
-  }, [interventions, inventory]);
+  }, [interventions, calculateIntTotal]);
 
   const unpaidTotal = useMemo(() => {
     return interventions
       .filter(i => i.status === 'done' && i.payment_status === 'unpaid')
       .reduce((acc, current) => acc + calculateIntTotal(current), 0);
-  }, [interventions, inventory]);
+  }, [interventions, calculateIntTotal]);
 
   const todaysInterventions = interventions
     .filter(i => i.date === today)
     .sort((a, b) => a.time.localeCompare(b.time));
-  const finishedInterventions = interventions.filter(i => i.status === 'done');
 
   const toggleRole = () => {
     const nextUser = currentUser?.role === 'admin' ? users[1] : users[0];
@@ -376,7 +350,7 @@ export function AdminDashboard() {
         
         // Setup Audio Analysis for Visualizer
         if (typeof window === 'undefined') return;
-        const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (!AudioContextClass) return;
         const audioContext = new AudioContextClass();
         const source = audioContext.createMediaStreamSource(stream);
@@ -401,7 +375,7 @@ export function AdminDashboard() {
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
 
-        mediaRecorder.ondataavailable = (e) => {
+        mediaRecorder.ondataavailable = (e: BlobEvent) => {
           if (e.data.size > 0) audioChunksRef.current.push(e.data);
         };
 
@@ -462,13 +436,13 @@ export function AdminDashboard() {
   return (
     <div className="fixed inset-0 bg-background overflow-hidden flex flex-col font-sans">
 
-      {/* 1. Fullscreen Map Layer */}
       <div className="absolute inset-0 z-0 bg-secondary/5">
-        <InteractiveMap
+        <BelgiumMap
+          interventions={interventions}
+          users={users}
+          zones={zones}
           onSelectIntervention={setSelectedIntervention}
           onContactTech={() => alert("Fonctionnalité Chat Équipe (Demo Mode)")}
-          prospects={[]}
-          incidents={[]}
           isZoneEditMode={isZoneEditMode}
         />
       </div>
@@ -506,7 +480,7 @@ export function AdminDashboard() {
                     <Input 
                       placeholder="TROUVER UN CLIENT OU FICHE..."
                       value={customerSearch}
-                      onChange={(e) => setCustomerSearch(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCustomerSearch(e.target.value)}
                       className="pl-9 pr-20 h-11 bg-black/5 border-none rounded-xl text-2xs font-black placeholder:text-muted-foreground/30 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all uppercase tracking-widest w-full"
                     />
                     <div className="absolute right-2 flex items-center gap-1.5">
@@ -563,9 +537,9 @@ export function AdminDashboard() {
                          <HistoryIcon className="w-8 h-8 text-primary/40" />
                        </div>
                        <div>
-                         <p className="text-2xs font-black uppercase tracking-widest text-muted-foreground mb-1">Centre d'Actions</p>
+                         <p className="text-2xs font-black uppercase tracking-widest text-muted-foreground mb-1">Centre d&apos;Actions</p>
                          <p className="text-3xs font-medium text-muted-foreground/60 leading-relaxed italic">
-                           Aucune action requise pour le moment.
+                           C&apos;est le moment idéal pour booster vos ventes.
                          </p>
                        </div>
                     </div>
@@ -720,7 +694,7 @@ export function AdminDashboard() {
                            <h4 className="text-sm font-black uppercase tracking-wider truncate">{tech.name}</h4>
                            <Badge className="bg-green-50 text-green-700 border-none text-4xs font-black px-1.5 h-3.5">PRO</Badge>
                         </div>
-                        <p className="text-3xs font-bold text-muted-foreground uppercase opacity-70">En service jusqu'à 18:00</p>
+                        <p className="text-3xs font-bold text-muted-foreground uppercase opacity-70">En service jusqu&apos;à 18:00</p>
                       </div>
                     </div>
 
@@ -786,6 +760,7 @@ export function AdminDashboard() {
             <Button
                 onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
                 variant="ghost"
+                aria-label="Tableau de bord"
                 className={`${isMobile ? 'h-10 w-10 px-1' : 'h-12 w-12'} rounded-full flex items-center justify-center transition-all group ${isLeftSidebarOpen ? 'bg-primary text-white shadow-lg' : 'hover:bg-black/5 text-muted-foreground'}`}
             >
                 <LayoutDashboard className={`w-5 h-5 ${isLeftSidebarOpen ? 'text-white' : 'group-hover:scale-110'} transition-transform`} />
@@ -793,6 +768,7 @@ export function AdminDashboard() {
 
             <Button
                 onClick={() => setIsCreateModalOpen(true)}
+                aria-label="Nouvelle Intervention"
                 className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full bg-foreground text-background font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center border-none ml-2`}
             >
                 <Plus className="w-5 h-5" />
@@ -801,6 +777,7 @@ export function AdminDashboard() {
             <Button
                 onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
                 variant="ghost"
+                aria-label="Techniciens et Zones"
                 className={`${isMobile ? 'h-10 w-10 px-1' : 'h-12 w-12'} rounded-full flex items-center justify-center transition-all group ${isRightSidebarOpen ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'hover:bg-black/5 text-muted-foreground'}`}
             >
                 <Users className={`w-5 h-5 ${isRightSidebarOpen ? 'text-white' : 'group-hover:scale-110'} transition-transform`} />
@@ -1062,10 +1039,12 @@ export function AdminDashboard() {
                     <input 
                       className="w-full bg-transparent border-none font-black tracking-tight text-lg p-0 focus:ring-0 focus:outline-none"
                       value={selectedIntervention?.address.split(',')[0] || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      placeholder="Adresse de l'intervention"
+                      aria-label="Adresse de l'intervention"
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         if (selectedIntervention) {
                           const { updateIntervention } = useStore.getState();
-                          updateIntervention(selectedIntervention.id, { address: `${e.target.value}, Strasbourg` });
+                          updateIntervention(selectedIntervention.id, { address: `${e.target.value}, Bruxelles` });
                         }
                       }}
                     />
@@ -1131,7 +1110,7 @@ export function AdminDashboard() {
                            return (
                               <>
                                  <div className="flex justify-between items-center text-2xs font-bold uppercase tracking-tight">
-                                    <span className="text-muted-foreground">Forfait Main d'œuvre</span>
+                                    <span className="text-muted-foreground">Forfait Main d&apos;œuvre</span>
                                     <span className="text-foreground">{b.labor} €</span>
                                  </div>
                                  <div className="flex justify-between items-center text-2xs font-bold uppercase tracking-tight">
@@ -1185,7 +1164,7 @@ export function AdminDashboard() {
                         <h3 className="text-3xs font-black uppercase tracking-widest text-muted-foreground ml-1">Photos Terrain</h3>
                         <div className="grid grid-cols-2 gap-2">
                            {(selectedIntervention.photos_url && selectedIntervention.photos_url.length > 0) ? selectedIntervention.photos_url.map((url, idx) => (
-                               <img key={idx} src={url} className="rounded-2xl aspect-video object-cover border border-black/5 shadow-sm" alt="Preuve" />
+                               <Image key={idx} src={url} width={300} height={200} unoptimized className="rounded-2xl aspect-video object-cover border border-black/5 shadow-sm" alt="Preuve" />
                             )) : <div className="col-span-2 py-8 bg-black/5 rounded-2xl text-center italic text-2xs">Aucune photo</div>}
                         </div>
                      </div>
@@ -1194,7 +1173,7 @@ export function AdminDashboard() {
                         <div className="space-y-2">
                            <h3 className="text-3xs font-black uppercase tracking-widest text-muted-foreground ml-1">Signature Client</h3>
                            <div className="bg-white/80 rounded-2xl border border-black/5 p-4 flex items-center justify-center shadow-sm">
-                              <img src={selectedIntervention.customer_signature} className="h-32 object-contain filter contrast-125" alt="Signature" />
+                              <Image src={selectedIntervention.customer_signature} width={300} height={128} unoptimized className="h-32 object-contain filter contrast-125" alt="Signature" />
                            </div>
                         </div>
                      )}
@@ -1247,7 +1226,7 @@ export function AdminDashboard() {
                               <FileText className="w-5 h-5 text-primary" />
                            </div>
                            <div>
-                              <p className="text-2xs font-black uppercase tracking-[0.2em] text-primary leading-none mb-1">Centre d'Export</p>
+                              <p className="text-2xs font-black uppercase tracking-[0.2em] text-primary leading-none mb-1">Centre d&apos;Export</p>
                               <p className="text-3xs font-medium text-muted-foreground uppercase opacity-70">Génération PDF Officielle</p>
                            </div>
                         </div>
@@ -1283,11 +1262,11 @@ export function AdminDashboard() {
                                          type: 'document',
                                          title: '📄 Devis Envoyé',
                                          description: `Un devis pour l'intervention à ${selectedIntervention.address} a été envoyé par email.`,
-                                       } as any);
+                                       });
                                      }
                                      
                                      alert('Devis envoyé avec succès à alkhastvatsaev@gmail.com');
-                                  } catch (e) {
+                                  } catch {
                                      alert('Erreur d\'envoi (Vérifiez la clé API Resend)');
                                   }
                                }}
@@ -1308,11 +1287,11 @@ export function AdminDashboard() {
                                          type: 'document',
                                          title: '🧾 Facture Envoyée',
                                          description: `La facture pour l'intervention à ${selectedIntervention.address} a été envoyée par email.`,
-                                       } as any);
+                                       });
                                      }
 
                                      alert('Facture envoyée avec succès à alkhastvatsaev@gmail.com');
-                                  } catch (e) {
+                                  } catch {
                                      alert('Erreur d\'envoi (Vérifiez la clé API Resend)');
                                   }
                                }}
@@ -1328,7 +1307,6 @@ export function AdminDashboard() {
                         onClick={async () => {
                            const { updateIntervention } = useStore.getState();
                            await updateIntervention(selectedIntervention.id, { status: 'done' });
-                           setHasNewArchive(true);
                            setSelectedIntervention(null);
                         }}
                         className="w-full h-16 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-black uppercase tracking-[0.1em] shadow-xl shadow-green-500/20 active:scale-95 transition-all flex items-center gap-2 border-none"
@@ -1355,7 +1333,7 @@ export function AdminDashboard() {
         <DialogContent className="w-[100vw] h-[100vh] max-w-none max-h-none m-0 p-0 rounded-none border-none bg-[#F8F9FB] flex flex-col overflow-hidden font-sans">
             <DialogHeader className="sr-only">
               <DialogTitle>Planning Global Stratégique</DialogTitle>
-              <DialogDescription>Vue d'overview mensuelle de la planification des techniciens et de la couverture opérationnelle.</DialogDescription>
+              <DialogDescription>Vue d&apos;overview mensuelle de la planification des techniciens et de la couverture opérationnelle.</DialogDescription>
             </DialogHeader>
             {/* Header / Management Toolbar */}
             <div className="p-6 md:p-8 border-b border-black/5 bg-white shrink-0">
@@ -1568,6 +1546,7 @@ export function AdminDashboard() {
             <div>
               <p className="text-2xs font-black text-primary uppercase tracking-[0.2em] mb-1">Planification</p>
               <DialogTitle className="text-2xl font-black tracking-tight leading-none uppercase">Créer Mission</DialogTitle>
+              <DialogDescription className="sr-only">Formulaire de création d&apos;une nouvelle intervention pour les techniciens.</DialogDescription>
             </div>
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setIsCreateModalOpen(false)}>
               <X className="w-5 h-5" />
@@ -1713,7 +1692,7 @@ export function AdminDashboard() {
                     className="w-full h-10 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 rounded-xl text-3xs font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-indigo-200 transition-all active:scale-95 group mt-4"
                   >
                     <Mic className="w-3 h-3 group-hover:animate-pulse" />
-                    Remplir avec l'appel de {activeCalls[0].clientName}
+                    Remplir avec l&apos;appel de {activeCalls[0].clientName}
                   </button>
                 )}
             </div>
@@ -1774,7 +1753,7 @@ export function AdminDashboard() {
                     placeholder="Tapez l'adresse (ex: 17 rue seneque)..." 
                     className="h-14 rounded-2xl bg-white/60 border-black/5 font-bold pr-12 focus:bg-white transition-all shadow-inner"
                     value={newMission.address}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
                       setNewMission({...newMission, address: e.target.value, latitude: 0, longitude: 0});
                     }}
                   />
@@ -1861,14 +1840,14 @@ export function AdminDashboard() {
                   <Label className="text-2xs font-black uppercase tracking-widest text-muted-foreground ml-1">Urgence Sociale (S.O.S)</Label>
                   <Select 
                     value={newMission.social_emergency_type} 
-                    onValueChange={(val: any) => setNewMission({...newMission, social_emergency_type: val, is_emergency: val !== 'none' || newMission.is_emergency})}
+                    onValueChange={(val) => setNewMission({...newMission, social_emergency_type: val as Intervention['social_emergency_type'], is_emergency: val !== 'none' || newMission.is_emergency})}
                   >
                     <SelectTrigger className={`h-12 rounded-xl border-none font-bold transition-all ${newMission.social_emergency_type !== 'none' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 'bg-white/60'}`}>
                       <SelectValue placeholder="Aucune" />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-none glass ios-shadow">
                       <SelectItem value="none" className="rounded-xl font-bold">Aucune</SelectItem>
-                      <SelectItem value="baby_inside" className="rounded-xl font-bold">👶 Bébé à l'intérieur</SelectItem>
+                      <SelectItem value="baby_inside" className="rounded-xl font-bold">👶 Bébé à l&apos;intérieur</SelectItem>
                       <SelectItem value="pet_trapped" className="rounded-xl font-bold">🐶 Animal coincé</SelectItem>
                       <SelectItem value="elderly_person" className="rounded-xl font-bold">👵 Personne vulnérable</SelectItem>
                     </SelectContent>
@@ -1881,19 +1860,19 @@ export function AdminDashboard() {
                   <Label className="text-2xs font-black uppercase tracking-widest text-muted-foreground ml-1">Catégorie de Service</Label>
                   <Select 
                     value={newMission.category} 
-                    onValueChange={(val: any) => setNewMission({...newMission, category: val})}
+                    onValueChange={(val) => setNewMission({...newMission, category: val as Intervention['category']})}
                   >
                     <SelectTrigger className="h-12 rounded-xl bg-white/60 border-black/5 font-bold">
                       <SelectValue placeholder="Choisir..." />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-none glass ios-shadow">
-                      <SelectItem value="emergency" className="rounded-xl font-bold">Ouverture d'Urgence</SelectItem>
+                      <SelectItem value="emergency" className="rounded-xl font-bold">Ouverture d&apos;Urgence</SelectItem>
                       <SelectItem value="installation" className="rounded-xl font-bold">Installation / Pose</SelectItem>
                       <SelectItem value="repair" className="rounded-xl font-bold">Réparation / SAV</SelectItem>
                       <SelectItem value="maintenance" className="rounded-xl font-bold">Entretien Préventif</SelectItem>
                       <SelectItem value="automotive" className="rounded-xl font-bold">Serrurerie Automobile</SelectItem>
                       <SelectItem value="safe" className="rounded-xl font-bold">Coffre-Fort / Blindage</SelectItem>
-                      <SelectItem value="access_control" className="rounded-xl font-bold">Contrôle d'Accès Smart</SelectItem>
+                      <SelectItem value="access_control" className="rounded-xl font-bold">Contrôle d&apos;Accès Smart</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1904,7 +1883,7 @@ export function AdminDashboard() {
                     type="date" 
                     className="h-12 rounded-xl bg-white/60 border-black/5 font-bold"
                     value={newMission.date}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMission({...newMission, date: e.target.value})}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setNewMission({...newMission, date: e.target.value})}
                   />
                 </div>
 
@@ -1914,7 +1893,7 @@ export function AdminDashboard() {
                     type="time" 
                     className="h-12 rounded-xl bg-white/60 border-black/5 font-bold"
                     value={newMission.time}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMission({...newMission, time: e.target.value})}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setNewMission({...newMission, time: e.target.value})}
                   />
                 </div>
 
@@ -1925,7 +1904,7 @@ export function AdminDashboard() {
                     className="h-12 rounded-xl bg-white/60 border-black/5 font-bold"
                     placeholder="ex: 45"
                     value={newMission.estimated_duration || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMission({...newMission, estimated_duration: parseInt(e.target.value) || 0})}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setNewMission({...newMission, estimated_duration: parseInt(e.target.value) || 0})}
                   />
                 </div>
               </div>
@@ -1959,7 +1938,7 @@ export function AdminDashboard() {
                   placeholder="Instructions pour le technicien..." 
                   className="min-h-[100px] rounded-xl bg-white/60 border-black/5 font-bold resize-none"
                   value={newMission.description}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewMission({...newMission, description: e.target.value})}
+                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNewMission({...newMission, description: e.target.value})}
                 />
               </div>
             </div>
@@ -1980,15 +1959,18 @@ export function AdminDashboard() {
                 
                 if (lat === 0) {
                   try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(newMission.address + ", Strasbourg")}`);
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(newMission.address + ", Bruxelles")}`);
                     const data = await response.json();
                     if (data && data.length > 0) {
                       lat = parseFloat(data[0].lat);
                       lon = parseFloat(data[0].lon);
+                    } else {
+                      lat = 50.8503;
+                      lon = 4.3517;
                     }
                   } catch {
-                    lat = 48.5830;
-                    lon = 7.7480;
+                    lat = 50.8503;
+                    lon = 4.3517;
                   }
                 }
 
@@ -2001,8 +1983,8 @@ export function AdminDashboard() {
                   date: newMission.date,
                   time: newMission.time,
                   description: newMission.description,
-                  latitude: lat || 48.5830,
-                  longitude: lon || 7.7480,
+                  latitude: lat || 50.8503,
+                  longitude: lon || 4.3517,
                   estimated_duration: newMission.estimated_duration,
                   labor_cost: newMission.labor_cost,
                   is_emergency: newMission.is_emergency,
@@ -2025,8 +2007,8 @@ export function AdminDashboard() {
                       date: newMission.date,
                       time: newMission.time,
                       description: newMission.description,
-                      latitude: lat || 48.5830,
-                      longitude: lon || 7.7480,
+                      latitude: lat || 50.8503,
+                      longitude: lon || 4.3517,
                       estimated_duration: newMission.estimated_duration,
                       labor_cost: newMission.labor_cost,
                       is_emergency: newMission.is_emergency,
@@ -2078,11 +2060,12 @@ export function AdminDashboard() {
         </DialogContent>
       </Dialog>
 
-       {/* 6. ROI WAR ROOM: STRASBOURG DOMINATION HUB */}
+       {/* 6. ROI WAR ROOM: * BELGIUM SENTINEL v1.0 - COMMERCIAL CONVERSION ENGINE
+HUB */}
        <Dialog open={isPublicityHubOpen} onOpenChange={setIsPublicityHubOpen}>
          <DialogContent className="max-w-xl w-[95vw] h-[90vh] bg-slate-950 border-none p-0 overflow-hidden text-white flex flex-col shadow-[0_40px_100px_rgba(0,0,0,0.5)]">
             <DialogHeader className="sr-only">
-              <DialogTitle>ROI War Room: Strasbourg Domination</DialogTitle>
+              <DialogTitle>ROI War Room: Belgique Excellence</DialogTitle>
               <DialogDescription>Centre de contrôle publicitaire et optimisation IA des campagnes Google Ads.</DialogDescription>
             </DialogHeader>
 
@@ -2095,7 +2078,7 @@ export function AdminDashboard() {
                   <div>
                     <h2 className="text-3xl font-black text-white tracking-tighter uppercase leading-none italic">ROI WAR ROOM</h2>
                     <p className="text-2xs font-black text-orange-500 uppercase tracking-[0.4em] mt-2 flex items-center gap-2">
-                       <Crosshair className="w-3 h-3" /> Strasbourg Domination Hub v4.0
+                       <Crosshair className="w-3 h-3" /> Belgique Excellence Hub v1.0
                     </p>
                   </div>
                </div>
@@ -2162,6 +2145,7 @@ export function AdminDashboard() {
                          </div>
                          <button 
                             onClick={() => toggleCampaign('google_sniper', 'Google Ads x Sentinel')}
+                            aria-label="Activer/Désactiver Google Sniper x Sentinel"
                             className={`w-16 h-8 rounded-full transition-all relative border-none ${runningCampaigns.includes('google_sniper') ? 'bg-primary' : 'bg-white/10'}`}
                          >
                             <motion.div 
@@ -2200,6 +2184,8 @@ export function AdminDashboard() {
                </div>
 
                {/* 3. Anti-Fraud & Market Intelligence */}
+               {// Advanced Sentinel System for Belgium News Intelligence
+ }
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-6">
                      <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
@@ -2259,7 +2245,7 @@ export function AdminDashboard() {
                   <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]" />
                   <span className="text-3xs font-black text-white/40 uppercase tracking-widest">IA Engine 1.0 (Google Llama-3-70B Bridge)</span>
                </div>
-               <p className="text-3xs font-black text-white/20 uppercase tracking-widest italic">ROI Garanti \ Strasbourg Domination</p>
+               <p className="text-3xs font-black text-white/20 uppercase tracking-widest italic">ROI Garanti \ Belgique Excellence</p>
             </div>
          </DialogContent>
        </Dialog>
@@ -2269,7 +2255,7 @@ export function AdminDashboard() {
          <DialogContent className="max-w-lg w-[95vw] h-[90vh] bg-slate-50/50 backdrop-blur-3xl rounded-[3rem] border-none p-0 overflow-hidden text-slate-900 flex flex-col shadow-[0_40px_100px_rgba(0,0,0,0.3)]">
             <DialogHeader className="sr-only">
               <DialogTitle>Hub Comptabilité & IA Finance</DialogTitle>
-              <DialogDescription>Gestion financière avancée et analyse prédictive Serrurerie Alsacienne OS.</DialogDescription>
+              <DialogDescription>Gestion financière avancée et analyse prédictive Serrurerie Bruxelloise OS.</DialogDescription>
             </DialogHeader>
 
             {/* Header */}
@@ -2279,7 +2265,7 @@ export function AdminDashboard() {
                   <Euro className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none">Pilotage Financier AI</h2>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none">Pilotage Financier IA</h2>
                   <p className="text-2xs font-black text-amber-600 uppercase tracking-[0.3em] mt-1.5 flex items-center gap-2">
                     <Sparkles className="w-3 h-3" /> Analyse en Temps Réel • Expert Comptable IA v2.0
                   </p>
@@ -2320,7 +2306,7 @@ export function AdminDashboard() {
                     <div className="flex items-end gap-2">
                         <h3 className="text-2xl font-black tracking-tighter text-slate-900">{formatPrice(dailyCA)}</h3>
                         <div className="flex-1 h-1 bg-green-100 rounded-full overflow-hidden mb-2 ml-2">
-                            <div className="h-full bg-green-500 rounded-full" style={{ width: '65%' }} />
+                            <div className="h-full bg-green-500 rounded-full w-[65%]" />
                         </div>
                     </div>
                 </div>
@@ -2496,7 +2482,7 @@ export function AdminDashboard() {
                         </div>
                         <LineChart className="w-6 h-6 text-indigo-400" />
                     </div>
-                    <p className="text-3xs font-bold text-white/40 uppercase tracking-widest mt-4">Calculé sur la base de l'historique saisonnier (IA).</p>
+                    <p className="text-3xs font-bold text-white/40 uppercase tracking-widest mt-4">Calculé sur la base de l&apos;historique saisonnier (IA).</p>
                 </div>
               </div>
             </div>
@@ -2705,7 +2691,7 @@ export function AdminDashboard() {
             <div className="space-y-1.5">
               <Label className="text-3xs font-black uppercase tracking-widest text-muted-foreground ml-1">Adresse Postal</Label>
               <Input 
-                placeholder="Ex: 5 Rue de la Mairie, 67000 Strasbourg"
+                placeholder="Ex: Avenue Louise 120, 1050 Bruxelles"
                 className="h-12 rounded-xl bg-black/5 border-none"
                 value={newClient.address}
                 onChange={e => setNewClient({...newClient, address: e.target.value})}
@@ -2764,7 +2750,7 @@ export function AdminDashboard() {
             <div className="flex justify-between items-center bg-white/50 backdrop-blur-md sticky top-0 z-10 -m-8 mb-6 p-8 border-b border-black/5">
               <div>
                 <h2 className="text-2xl font-black tracking-tighter uppercase leading-none">Console Admin</h2>
-                <p className="text-2xs font-black text-indigo-600 uppercase tracking-widest mt-1">Serrurerie Alsacienne OS v2.4 - Autonomous Mode</p>
+                <p className="text-2xs font-black text-indigo-600 uppercase tracking-widest mt-1">Serrurerie Bruxelloise OS v2.4 - Autonomous Mode</p>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center text-white shadow-2xl">
                 <Settings className="w-6 h-6 animate-spin-slow" />
@@ -2834,7 +2820,7 @@ export function AdminDashboard() {
                   <div className="bg-black/5 rounded-[2rem] p-6 border border-black/5 space-y-4">
                     <div className="flex items-center gap-2 mb-1">
                       <Phone className="w-4 h-4 text-indigo-600" />
-                      <h3 className="text-xs font-black uppercase tracking-widest">Simulateur d'Appel (Demo)</h3>
+                      <h3 className="text-xs font-black uppercase tracking-widest">Simulateur d&apos;Appel (Demo)</h3>
                     </div>
                     <div className="flex gap-2">
                       <Input 

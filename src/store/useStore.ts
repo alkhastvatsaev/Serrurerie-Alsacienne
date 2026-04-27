@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { User, Client, Asset, InventoryItem, Intervention, VanStock, Supplier, Notification, WorkSchedule, Zone, ZonePosition, ActivityItem } from '@/types';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { collection, onSnapshot, doc, updateDoc, addDoc, query, orderBy, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, getStorage } from "firebase/storage";
 
@@ -116,19 +116,19 @@ const DUMMY_SCHEDULES: WorkSchedule[] = [
 ];
 
 const DUMMY_USERS: User[] = [
-  { id: '1', name: 'TIMOUR', role: 'admin', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', phone: '07 67 69 38 04', email: 'admin@serrurerie-alsacienne.fr' },
-  { id: '2', name: 'Marc', role: 'tech', status: 'active', avatar_url: '/avatars/marc.png', phone: '0611223344', email: 'marc@serrurerie-alsacienne.fr', specialties: ['Ouverture Fine', 'A2P***', 'Coffre-fort'], performance_score: 98, completed_missions: 1240 },
-  { id: '3', name: 'Sophie', role: 'tech', status: 'active', avatar_url: '/avatars/sophie.png', phone: '0788990011', email: 'sophie@serrurerie-alsacienne.fr', specialties: ['Contrôle d\'Accès', 'Électronique', 'Nuki Pro'], performance_score: 95, completed_missions: 856 },
-  { id: '4', name: 'Lucas', role: 'tech', status: 'active', avatar_url: '/avatars/lucas.png', phone: '0655443322', email: 'lucas@serrurerie-alsacienne.fr', specialties: ['Blindage', 'Portes de Cave', 'Soudure'], performance_score: 92, completed_missions: 1120 },
-  { id: '5', name: 'Hugo', role: 'tech', status: 'active', avatar_url: '/avatars/hugo.png', phone: '0622334455', email: 'hugo@serrurerie-alsacienne.fr', specialties: ['Automobile', 'Transpondeur', 'OBDII'], performance_score: 89, completed_missions: 645 },
-  { id: '6', name: 'Yanis', role: 'tech', status: 'active', avatar_url: '/avatars/yanis.png', phone: '0711223344', email: 'yanis@serrurerie-alsacienne.fr', specialties: ['Maintenance Gérance', 'Vigik', 'Multimarques'], performance_score: 94, completed_missions: 932 },
-  { id: '7', name: 'Thomas', role: 'tech', status: 'active', avatar_url: '/avatars/thomas.png', phone: '0699887766', email: 'thomas@serrurerie-alsacienne.fr', specialties: ['Domotique', 'Volets Roulants', 'Serrurerie Traditionnelle'], performance_score: 88, completed_missions: 420 },
+  { id: '1', name: 'TIMOUR', role: 'admin', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', phone: '+32 470 00 00 00', email: 'admin@serrurerie-belgique.be' },
+  { id: '2', name: 'Marc', role: 'tech', status: 'active', avatar_url: '/avatars/marc.png', phone: '+32 471 11 22 33', email: 'marc@serrurerie-belgique.be', specialties: ['Ouverture Fine', 'Haute Sécurité', 'Coffre-fort'], performance_score: 98, completed_missions: 1240 },
+  { id: '3', name: 'Sophie', role: 'tech', status: 'active', avatar_url: '/avatars/sophie.png', phone: '+32 472 22 33 44', email: 'sophie@serrurerie-belgique.be', specialties: ['Contrôle d\'Accès', 'Électronique', 'Nuki Pro'], performance_score: 95, completed_missions: 856 },
+  { id: '4', name: 'Lucas', role: 'tech', status: 'active', avatar_url: '/avatars/lucas.png', phone: '+32 473 33 44 55', email: 'lucas@serrurerie-belgique.be', specialties: ['Blindage', 'Portes de Cave', 'Soudure'], performance_score: 92, completed_missions: 1120 },
+  { id: '5', name: 'Hugo', role: 'tech', status: 'active', avatar_url: '/avatars/hugo.png', phone: '+32 474 44 55 66', email: 'hugo@serrurerie-belgique.be', specialties: ['Automobile', 'Transpondeur', 'OBDII'], performance_score: 89, completed_missions: 645 },
+  { id: '6', name: 'Yanis', role: 'tech', status: 'active', avatar_url: '/avatars/yanis.png', phone: '+32 475 55 66 77', email: 'yanis@serrurerie-belgique.be', specialties: ['Maintenance Gérance', 'Vigik', 'Multimarques'], performance_score: 94, completed_missions: 932 },
+  { id: '7', name: 'Thomas', role: 'tech', status: 'active', avatar_url: '/avatars/thomas.png', phone: '+32 476 66 77 88', email: 'thomas@serrurerie-belgique.be', specialties: ['Domotique', 'Volets Roulants', 'Serrurerie Traditionnelle'], performance_score: 88, completed_missions: 420 },
 ]
 
 const DUMMY_CLIENTS: Client[] = [
-  { id: 'c1', name: 'Immeuble Quai des Bateliers', address: '15 Quai des Bateliers, 67000 Strasbourg', contact_info: '03 88 11 22 33' },
-  { id: 'c2', name: 'Résidence de l\'Orangerie', address: '4 Avenue de l\'Europe, 67000 Strasbourg', contact_info: '06 99 88 77 66' },
-  { id: 'user-test', name: 'Alkhast Vatsaev', address: '17 rue seneque, 67200 Strasbourg', phone: '0767693804', email: 'alkhastvatsaev@gmail.com', contact_info: '07 67 69 38 04' },
+  { id: 'c1', name: 'Résidence Louise', address: 'Avenue Louise 120, 1050 Bruxelles', contact_info: '+32 2 511 22 33' },
+  { id: 'c2', name: 'Bureaux de la Bourse', address: 'Place de la Bourse 1, 1000 Bruxelles', contact_info: '+32 2 444 55 66' },
+  { id: 'user-test', name: 'Alkhast Vatsaev', address: 'Rue de la Loi 16, 1000 Bruxelles', phone: '+32 470 00 00 00', email: 'alkhastvatsaev@gmail.com', contact_info: '+32 470 00 00 00' },
 ];
 
 const DUMMY_ASSETS: Asset[] = [
@@ -183,37 +183,37 @@ const DUMMY_INVENTORY: InventoryItem[] = [
 ];
 
 const DUMMY_VAN_STOCKS: VanStock[] = [
-  // Marc (Centre)
+  // Marc (Bruxelles Centre)
   { tech_id: '2', item_id: 'i1', quantity: 4 },
   { tech_id: '2', item_id: 'i3', quantity: 1 },
   { tech_id: '2', item_id: 'i10', quantity: 1 },
   { tech_id: '2', item_id: 'i13', quantity: 6 },
   
-  // Sophie (Nord)
+  // Sophie (Anvers)
   { tech_id: '3', item_id: 'i1', quantity: 3 },
   { tech_id: '3', item_id: 'i2', quantity: 4 },
   { tech_id: '3', item_id: 'i6', quantity: 2 },
   { tech_id: '3', item_id: 'i13', quantity: 3 },
   
-  // Lucas (Sud)
+  // Lucas (Namur)
   { tech_id: '4', item_id: 'i1', quantity: 2 },
   { tech_id: '4', item_id: 'i4', quantity: 5 },
   { tech_id: '4', item_id: 'i11', quantity: 2 },
   { tech_id: '4', item_id: 'i14', quantity: 1 },
 
-  // Hugo (Schiltigheim)
+  // Hugo (Schaerbeek)
   { tech_id: '5', item_id: 'i2', quantity: 6 },
   { tech_id: '5', item_id: 'i5', quantity: 1 },
   { tech_id: '5', item_id: 'i10', quantity: 1 },
   { tech_id: '5', item_id: 'i13', quantity: 8 },
 
-  // Yanis (Illkirch)
+  // Yanis (Ixelles)
   { tech_id: '6', item_id: 'i1', quantity: 5 },
   { tech_id: '6', item_id: 'i6', quantity: 2 },
   { tech_id: '6', item_id: 'i12', quantity: 1 },
   { tech_id: '6', item_id: 'i15', quantity: 4 },
 
-  // Thomas (Meinau)
+  // Thomas (Uccle)
   { tech_id: '7', item_id: 'i1', quantity: 4 },
   { tech_id: '7', item_id: 'i4', quantity: 2 },
   { tech_id: '7', item_id: 'i10', quantity: 1 },
@@ -222,123 +222,58 @@ const DUMMY_VAN_STOCKS: VanStock[] = [
 const DEFAULT_ZONES: Zone[] = [
   {
     techId: '2', 
-    name: 'Zone Centre (Marc)',
+    name: 'Zone Bruxelles Centre (Marc)',
     color: '#007AFF', 
     positions: [
-      {lat: 48.5800, lng: 7.7300}, {lat: 48.5920, lng: 7.7350}, {lat: 48.5920, lng: 7.7600}, 
-      {lat: 48.5850, lng: 7.7700}, {lat: 48.5750, lng: 7.7650}, {lat: 48.5720, lng: 7.7500}, 
-      {lat: 48.5720, lng: 7.7300}
+      {lat: 50.8400, lng: 4.3400}, {lat: 50.8600, lng: 4.3400}, {lat: 50.8600, lng: 4.3700}, 
+      {lat: 50.8450, lng: 4.3800}, {lat: 50.8350, lng: 4.3700}, {lat: 50.8320, lng: 4.3500}
     ]
   },
   {
     techId: '3', 
-    name: 'Zone Nord (Sophie)',
+    name: 'Zone Anvers (Sophie)',
     color: '#FF9500', 
     positions: [
-      {lat: 48.5920, lng: 7.7350}, {lat: 48.6400, lng: 7.7350}, {lat: 48.6400, lng: 7.8200}, 
-      {lat: 48.5850, lng: 7.8200}, {lat: 48.5850, lng: 7.7700}, {lat: 48.5920, lng: 7.7600}
+      {lat: 51.2100, lng: 4.3900}, {lat: 51.2300, lng: 4.3900}, {lat: 51.2300, lng: 4.4200}, 
+      {lat: 51.2100, lng: 4.4200}
     ]
   },
   {
     techId: '4', 
-    name: 'Zone Sud (Lucas)',
+    name: 'Zone Namur (Lucas)',
     color: '#34C759', 
     positions: [
-      {lat: 48.5720, lng: 7.7300}, {lat: 48.5720, lng: 7.7500}, {lat: 48.5750, lng: 7.7650}, 
-      {lat: 48.5700, lng: 7.8500}, {lat: 48.5200, lng: 7.7800}, {lat: 48.5200, lng: 7.6800}, 
-      {lat: 48.5700, lng: 7.6800}
-    ]
-  },
-  {
-    techId: '5',
-    name: 'Zone Schiltigheim (Hugo)',
-    color: '#5856D6',
-    positions: [
-      {lat: 48.6000, lng: 7.7300}, {lat: 48.6250, lng: 7.7300}, {lat: 48.6250, lng: 7.7600},
-      {lat: 48.6000, lng: 7.7600}
-    ]
-  },
-  {
-    techId: '6',
-    name: 'Zone Illkirch (Yanis)',
-    color: '#FF2D55',
-    positions: [
-      {lat: 48.5400, lng: 7.6800}, {lat: 48.5400, lng: 7.7500}, {lat: 48.5000, lng: 7.7500},
-      {lat: 48.5000, lng: 7.6800}
-    ]
-  },
-  {
-    techId: '7',
-    name: 'Zone La Meinau (Thomas)',
-    color: '#06B6D4',
-    positions: [
-        {lat: 48.5650, lng: 7.7400}, {lat: 48.5650, lng: 7.7600}, 
-        {lat: 48.5500, lng: 7.7600}, {lat: 48.5500, lng: 7.7400}
+      {lat: 50.4600, lng: 4.8500}, {lat: 50.4800, lng: 4.8500}, {lat: 50.4800, lng: 4.8800}, 
+      {lat: 50.4600, lng: 4.8800}
     ]
   }
 ];
 
-// Locksmith Suppliers in Strasbourg
+// Locksmith Suppliers in Belgium
 const SUPPLIERS: Supplier[] = [
   {
     id: 'sup1',
-    name: 'Würth Strasbourg',
+    name: 'Lecot Bruxelles',
     type: 'tools',
-    address: '1 Rue de la Grossau, 67100 Strasbourg',
-    latitude: 48.5667,
-    longitude: 7.7589,
-    phone: '03 88 79 79 79',
-    hours: 'Lun-Ven: 7h-18h, Sam: 8h-12h',
-    specialties: ['Extracteurs de cylindre', 'Vis auto-foreuses pro', 'Pistolets silicone', 'Fixations lourdes'],
-    logo_url: 'https://seeklogo.com/images/W/wurth-logo-5E89DF8831-seeklogo.com.png'
+    address: 'Boulevard de l\'Humanité 55, 1070 Anderlecht',
+    latitude: 50.8200,
+    longitude: 4.3100,
+    phone: '+32 2 520 20 20',
+    hours: 'Lun-Ven: 7h-18h',
+    specialties: ['Extracteurs de cylindre', 'Quincaillerie pro'],
+    logo_url: 'https://www.lecot.be/images/logo.png'
   },
   {
     id: 'sup2',
-    name: 'Point P Strasbourg',
+    name: 'Meno Group',
     type: 'hardware',
-    address: '15 Route de Bischwiller, 67300 Schiltigheim',
-    latitude: 48.6089,
-    longitude: 7.7456,
-    phone: '03 88 18 85 00',
-    hours: 'Lun-Ven: 6h30-18h30, Sam: 7h-12h',
-    specialties: ['Serrures 3 points A2P', 'Plaques de blindage', 'Quincaillerie du bâtiment'],
-    logo_url: 'https://seeklogo.com/images/P/point-p-logo-0C5DF5B5F5-seeklogo.com.png'
-  },
-  {
-    id: 'sup3',
-    name: 'Berner Strasbourg',
-    type: 'tools',
-    address: '3 Rue de la Plaine des Bouchers, 67100 Strasbourg',
-    latitude: 48.5598,
-    longitude: 7.7623,
-    phone: '03 88 40 17 17',
-    hours: 'Lun-Ven: 7h30-18h, Sam: 8h-12h',
-    specialties: ['Perceuses Bosch Pro', 'Clés à frappe', 'Consommables pro', 'Équipement Van'],
-    logo_url: 'https://seeklogo.com/images/B/berner-logo-02840C1D5F-seeklogo.com.png'
-  },
-  {
-    id: 'sup4',
-    name: 'Rexel Strasbourg',
-    type: 'security',
-    address: '12 Rue du Travail, 67200 Strasbourg',
-    latitude: 48.5756,
-    longitude: 7.7589,
-    phone: '03 88 27 06 06',
-    hours: 'Lun-Ven: 7h30-12h / 13h30-17h30',
-    specialties: ['Nuki Smart Lock', 'Lecteurs Vigik', 'Claviers à code', 'Domotique'],
-    logo_url: 'https://seeklogo.com/images/R/rexel-logo-8B0C5F5F5E-seeklogo.com.png'
-  },
-  {
-    id: 'sup5',
-    name: 'Leroy Merlin Strasbourg',
-    type: 'general',
-    address: 'Route de Bischwiller, 67300 Schiltigheim',
-    latitude: 48.6123,
-    longitude: 7.7412,
-    phone: '03 88 18 96 00',
-    hours: 'Lun-Sam: 8h-20h, Dim: 9h-19h',
-    specialties: ['Cylindres Vachette/Bricard', 'Verrous Héraclès', 'Serrurerie courante'],
-    logo_url: 'https://seeklogo.com/images/L/leroy-merlin-logo-4A5AB4AAC0-seeklogo.com.png'
+    address: 'Chaussée de Louvain, 1930 Zaventem',
+    latitude: 50.8800,
+    longitude: 4.4700,
+    phone: '+32 2 725 15 00',
+    hours: 'Lun-Ven: 8h-18h',
+    specialties: ['Blindage A2P', 'Serrures multipoints'],
+    logo_url: 'https://www.meno.be/logo.png'
   }
 ];
 
@@ -520,7 +455,25 @@ export const useStore = create<AppState>()((set, get) => ({
       })),
       
       initListeners: () => {
-        if (!db) return;
+        if (!auth || !db) return;
+
+        // 0. Listen for Auth Changes
+        const { onAuthStateChanged } = require('firebase/auth');
+        onAuthStateChanged(auth, (firebaseUser: any) => {
+          if (firebaseUser) {
+            // Find internal user by phone or email
+            const internalUser = get().users.find(u => 
+              u.phone?.replace(/\s/g, '') === firebaseUser.phoneNumber?.replace(/\s/g, '').replace('+33', '0') ||
+              u.email === firebaseUser.email
+            );
+            if (internalUser) {
+              set({ currentUser: internalUser });
+            }
+          } else {
+            set({ currentUser: null });
+          }
+        });
+
         // 1. Listen for Interventions - With Error Handling
         try {
             onSnapshot(collection(db, 'interventions'), (snapshot) => {
@@ -1027,12 +980,12 @@ export const useStore = create<AppState>()((set, get) => ({
           const newInt = { ...intervention };
           if (!newInt.id) newInt.id = Math.random().toString(36).substr(2, 9);
           
-          // Mock Geocoding if missing (Center of Strasbourg approx)
+          // Mock Geocoding if missing (Center of Brussels approx)
           if (!newInt.latitude) {
              // Randomly place in one of the zones for demo purposes
-             // Or just slight offset from Strasbourg center
-             newInt.latitude = 48.5734 + (Math.random() - 0.5) * 0.05;
-             newInt.longitude = 7.7521 + (Math.random() - 0.5) * 0.05;
+             // Or just slight offset from Brussels center
+             newInt.latitude = 50.8503 + (Math.random() - 0.5) * 0.05;
+             newInt.longitude = 4.3517 + (Math.random() - 0.5) * 0.05;
           }
 
           await addDoc(collection(db, 'interventions'), newInt);
@@ -1089,9 +1042,9 @@ export const useStore = create<AppState>()((set, get) => ({
             category: 'emergency',
             is_emergency: true,
             status: 'done',
-            address: '15 Quai des Bateliers, 67000 Strasbourg',
+            address: 'Grand Place 1, 1000 Bruxelles',
             description: 'Client enfermé dehors — ouverture fine porte blindée A2P',
-            latitude: 48.5802, longitude: 7.7518,
+            latitude: 50.8467, longitude: 4.3524,
             estimated_duration: 45,
             labor_cost: 120,
             parts_used: [{ item_id: 'i1', quantity: 1 }],
@@ -1106,9 +1059,9 @@ export const useStore = create<AppState>()((set, get) => ({
             time: '11:00',
             category: 'installation',
             status: 'in_progress',
-            address: '3 Place Kléber, 67000 Strasbourg',
+            address: 'Avenue Louise 120, 1050 Bruxelles',
             description: 'Installation serrure connectée Yale Linus Pro — bureau 3ème étage',
-            latitude: 48.5833, longitude: 7.7455,
+            latitude: 50.8250, longitude: 4.3640,
             estimated_duration: 90,
             labor_cost: 150,
             parts_used: [{ item_id: 'i3', quantity: 1 }],
@@ -1122,9 +1075,9 @@ export const useStore = create<AppState>()((set, get) => ({
             time: '15:00',
             category: 'maintenance',
             status: 'pending',
-            address: '8 Rue du Dôme, 67000 Strasbourg',
+            address: 'Rue Royale 10, 1000 Bruxelles',
             description: 'Maintenance annuelle résidence — 12 cylindres à vérifier',
-            latitude: 48.5812, longitude: 7.7510,
+            latitude: 50.8440, longitude: 4.3610,
             estimated_duration: 120,
             labor_cost: 200,
             parts_used: [],
@@ -1139,9 +1092,9 @@ export const useStore = create<AppState>()((set, get) => ({
             time: '09:15',
             category: 'installation',
             status: 'done',
-            address: '4 Avenue de l\'Europe, 67000 Strasbourg',
+            address: 'Rue de la Loi 16, 1000 Bruxelles',
             description: 'Pose contrôle d\'accès Vigik + lecteur badge immeuble',
-            latitude: 48.5977, longitude: 7.7707,
+            latitude: 50.8460, longitude: 4.3790,
             estimated_duration: 60,
             labor_cost: 180,
             parts_used: [{ item_id: 'i5', quantity: 1 }],
@@ -1156,9 +1109,9 @@ export const useStore = create<AppState>()((set, get) => ({
             time: '13:30',
             category: 'repair',
             status: 'waiting_approval',
-            address: '27 Rue de la Mésange, 67000 Strasbourg',
+            address: 'Rue Neuve 123, 1000 Bruxelles',
             description: 'Réparation serrure multipoint bloquée — porte d\'entrée',
-            latitude: 48.5845, longitude: 7.7440,
+            latitude: 50.8520, longitude: 4.3560,
             estimated_duration: 45,
             labor_cost: 95,
             parts_used: [{ item_id: 'i1', quantity: 1 }, { item_id: 'i13', quantity: 2 }],
@@ -1172,9 +1125,9 @@ export const useStore = create<AppState>()((set, get) => ({
             time: '16:45',
             category: 'installation',
             status: 'pending',
-            address: '10 Rue du Vieux Marché aux Poissons, 67000 Strasbourg',
+            address: 'Place Flagey 7, 1050 Ixelles',
             description: 'Installation système Nuki Pro — porte cochère résidence premium',
-            latitude: 48.5791, longitude: 7.7479,
+            latitude: 50.8270, longitude: 4.3740,
             estimated_duration: 75,
             labor_cost: 160,
             parts_used: [],
@@ -1189,9 +1142,9 @@ export const useStore = create<AppState>()((set, get) => ({
             time: '08:00',
             category: 'repair',
             status: 'done',
-            address: '22 Rue des Orphelins, 67000 Strasbourg',
+            address: 'Chaussée de Waterloo 450, 1050 Ixelles',
             description: 'Renforcement blindage porte cave — soudure plaque manganèse',
-            latitude: 48.5760, longitude: 7.7530,
+            latitude: 50.8180, longitude: 4.3620,
             estimated_duration: 90,
             labor_cost: 220,
             parts_used: [{ item_id: 'i20', quantity: 2 }],
@@ -1207,9 +1160,9 @@ export const useStore = create<AppState>()((set, get) => ({
             category: 'emergency',
             is_emergency: true,
             status: 'in_progress',
-            address: '5 Rue de la Fonderie, 67000 Strasbourg',
+            address: 'Rue Haute 15, 1000 Bruxelles',
             description: 'Effraction détectée — remplacement serrure 3 points + blindage',
-            latitude: 48.5720, longitude: 7.7460,
+            latitude: 50.8410, longitude: 4.3510,
             estimated_duration: 120,
             labor_cost: 280,
             parts_used: [{ item_id: 'i4', quantity: 1 }, { item_id: 'i20', quantity: 1 }],
@@ -1223,9 +1176,9 @@ export const useStore = create<AppState>()((set, get) => ({
             time: '17:00',
             category: 'repair',
             status: 'pending',
-            address: '14 Rue de Zurich, 67000 Strasbourg',
+            address: 'Avenue de Tervueren 2, 1040 Etterbeek',
             description: 'Porte de cave coincée — diagnostic et réparation',
-            latitude: 48.5740, longitude: 7.7380,
+            latitude: 50.8400, longitude: 4.3980,
             estimated_duration: 60,
             labor_cost: 90,
             parts_used: [],
@@ -1240,9 +1193,9 @@ export const useStore = create<AppState>()((set, get) => ({
             time: '19:00',
             category: 'automotive',
             status: 'pending',
-            address: '45 Route de Bischwiller, 67300 Schiltigheim',
+            address: 'Rue de la Victoire, 1060 Saint-Gilles',
             description: 'Programmation clé transpondeur BMW X3 — client sur parking',
-            latitude: 48.6120, longitude: 7.7430,
+            latitude: 50.8280, longitude: 4.3480,
             estimated_duration: 60,
             labor_cost: 180,
             parts_used: [],
@@ -1257,9 +1210,9 @@ export const useStore = create<AppState>()((set, get) => ({
             time: '10:00',
             category: 'maintenance',
             status: 'done',
-            address: '2 Rue de l\'Industrie, 67400 Illkirch-Graffenstaden',
+            address: 'Chaussée d\'Alsemberg, 1180 Uccle',
             description: 'Maintenance trimestrielle gérance — 8 portes, 3 badges Vigik',
-            latitude: 48.5280, longitude: 7.7180,
+            latitude: 50.8030, longitude: 4.3350,
             estimated_duration: 180,
             labor_cost: 350,
             parts_used: [{ item_id: 'i1', quantity: 2 }, { item_id: 'i13', quantity: 3 }],
@@ -1274,9 +1227,9 @@ export const useStore = create<AppState>()((set, get) => ({
             time: '15:30',
             category: 'installation',
             status: 'pending',
-            address: '17 Route de Lyon, 67400 Illkirch-Graffenstaden',
+            address: 'Avenue Brugmann, 1190 Forest',
             description: 'Installation coffre-fort encastré La Gard — serrure électronique',
-            latitude: 48.5230, longitude: 7.7210,
+            latitude: 50.8120, longitude: 4.3450,
             estimated_duration: 90,
             labor_cost: 200,
             parts_used: [],

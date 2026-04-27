@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
 
-// Strasbourg Neighborhood coordinates for mapping
+// Belgian Neighborhood coordinates for mapping
 const GEO_ZONES: Record<string, {lat: number, lng: number}> = {
-  'Neudorf': { lat: 48.5700, lng: 7.7600 },
-  'Meinau': { lat: 48.5500, lng: 7.7500 },
-  'Gare': { lat: 48.5850, lng: 7.7350 },
-  'Krutenau': { lat: 48.5800, lng: 7.7600 },
-  'Esplanade': { lat: 48.5750, lng: 7.7700 },
-  'Robertsau': { lat: 48.6000, lng: 7.7800 },
-  'Cronenbourg': { lat: 48.5900, lng: 7.7200 },
-  'Koenigshoffen': { lat: 48.5750, lng: 7.7100 },
-  'Elsau': { lat: 48.5650, lng: 7.7200 },
-  'Hautepierre': { lat: 48.5900, lng: 7.7000 },
-  'Poteries': { lat: 48.5800, lng: 7.6900 },
-  'Centre': { lat: 48.5830, lng: 7.7480 } // Default
+  'Ixelles': { lat: 50.8333, lng: 4.3667 },
+  'Uccle': { lat: 50.8000, lng: 4.3333 },
+  'Schaerbeek': { lat: 50.8667, lng: 4.3833 },
+  'Etterbeek': { lat: 50.8333, lng: 4.3833 },
+  'Molenbeek': { lat: 50.8500, lng: 4.3333 },
+  'Anderlecht': { lat: 50.8333, lng: 4.3000 },
+  'Evere': { lat: 50.8667, lng: 4.4000 },
+  'Woluwe': { lat: 50.8333, lng: 4.4333 },
+  'Jette': { lat: 50.8667, lng: 4.3333 },
+  'Forest': { lat: 50.8167, lng: 4.3167 },
+  'Auderghem': { lat: 50.8167, lng: 4.4167 },
+  'Centre': { lat: 50.8466, lng: 4.3528 } // Bruxelles Centre
 };
 
 // Types corresponding to app logic
@@ -29,7 +29,7 @@ const KEYWORDS: Record<IncidentType, string[]> = {
 };
 
 const NEGATIVE_KEYWORDS = [
-    'noyade', 'noyé', 'fleuve', 'rivière', 'canal', 'ill',
+    'noyade', 'noyé', 'fleuve', 'rivière', 'canal', 'senne',
     'stupéfiants', 'drogue', 'cannabis', 'cocaïne', 'trafic',
     'tribunal', 'jugé', 'condamné', 'prison', 'justice', 'procès', // Old news or legal
     'suicide', 'disparition', 'sexuelle', 'agression', 'harcèlement', // Tragique mais pas serrurerie
@@ -75,14 +75,14 @@ function getLocation(text: string): { lat: number, lng: number, name: string } {
   return {
     lat: center.lat + (Math.random() - 0.5) * 0.02,
     lng: center.lng + (Math.random() - 0.5) * 0.02,
-    name: "Strasbourg"
+    name: "Bruxelles"
   };
 }
 
 export async function GET() {
   try {
-    // Add 'when:2d' to get recent coverage (sometimes "today" starts late), but we filter by date below strictly.
-    const RSS_URL = "https://news.google.com/rss/search?q=Strasbourg+faits+divers+when:2d&hl=fr&gl=FR&ceid=FR:fr";
+    // Use Belgian News parameters
+    const RSS_URL = "https://news.google.com/rss/search?q=Belgique+faits+divers+when:2d&hl=fr&gl=BE&ceid=BE:fr";
     const response = await fetch(RSS_URL);
     const xml = await response.text();
 
@@ -127,7 +127,7 @@ export async function GET() {
                 latitude: locationData.lat,
                 longitude: locationData.lng,
                 timestamp: itemDate.getTime(),
-                source: 'Google News / DNA',
+                source: 'Google News BE / Le Soir',
                 url: link,
                 metadata: {
                     priority: type === 'fire' || type === 'burglary' ? 'high' : 'medium'

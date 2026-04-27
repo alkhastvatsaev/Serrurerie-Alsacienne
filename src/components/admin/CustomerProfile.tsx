@@ -12,7 +12,7 @@ import { Client, ActivityItem, Intervention } from '@/types';
 import { useStore } from '@/store/useStore';
 import { format, isValid, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { fetchCustomerEmails, GmailMessage } from '@/lib/gmail';
+import { fetchCustomerEmails, GmailMessage } from '@/services/gmail';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 
@@ -260,8 +260,12 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
              >
                 <Trash2 className="w-4 h-4" />
              </button>
-             <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-xl transition-colors ml-1">
-               <X className="w-5 h-5" />
+             <button 
+                onClick={onClose} 
+                aria-label="Fermer"
+                className="p-2 hover:bg-black/5 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
              </button>
            </div>
          </div>

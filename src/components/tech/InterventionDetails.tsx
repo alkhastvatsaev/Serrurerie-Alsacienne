@@ -14,8 +14,8 @@ import {
 import { useState, useRef, useEffect } from "react";
 import { calculatePriceBreakdown } from "@/lib/pricing";
 import { AssetSheet } from "./AssetSheet";
-import { downloadPDF, sendPDFByEmail } from "@/lib/pdf-service";
-import { sendWhatsAppMessage, whatsappTemplates } from "@/lib/whatsapp";
+import { downloadPDF, sendPDFByEmail } from "@/services/pdf-service";
+import { sendWhatsAppMessage, whatsappTemplates } from "@/services/whatsapp";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface InterventionDetailsProps {
@@ -290,6 +290,8 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                         sendWhatsAppMessage(client.contact_info, whatsappTemplates.etaToClient(currentUser?.name || 'Technicien', 15));
                       }
                     }}
+                    title="Envoyer ETA par WhatsApp"
+                    aria-label="Envoyer ETA par WhatsApp"
                     className="p-3 bg-green-500 rounded-2xl text-white shadow-lg shadow-green-500/20 active:scale-95 transition-all"
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="opacity-100">
@@ -298,6 +300,8 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                   </button>
                   <a 
                     href={`tel:${client.contact_info}`} 
+                    title={`Appeler ${client.name}`}
+                    aria-label={`Appeler ${client.name}`}
                     className="p-3 bg-blue-500 rounded-2xl text-white shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
                   >
                     <PhoneIcon className="w-5 h-5" />
@@ -335,6 +339,8 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                       className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all ${used ? 'bg-white text-primary shadow-sm active:scale-90' : 'text-muted-foreground opacity-30 cursor-not-allowed'}`}
                       onClick={() => removePart(item.id)}
                       disabled={!used}
+                      aria-label={`Retirer 1 ${item.item_name}`}
+                      title={`Retirer 1 ${item.item_name}`}
                     >
                       <Minus className="w-4 h-4" />
                     </button>
@@ -343,6 +349,8 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                       className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all ${item.quantity > (used?.qty || 0) ? 'bg-white text-primary shadow-sm active:scale-90' : 'text-muted-foreground opacity-30 cursor-not-allowed'}`}
                       onClick={() => addPart(item.id)}
                       disabled={item.quantity <= (used?.qty || 0)}
+                      aria-label={`Ajouter 1 ${item.item_name}`}
+                      title={`Ajouter 1 ${item.item_name}`}
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -359,6 +367,7 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
           <div className="grid grid-cols-2 gap-4">
             <input 
               type="file" accept="image/*" capture="environment" className="hidden" id="photo-upload"
+              aria-label="Prendre une photo de l'intervention"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -387,6 +396,8 @@ export function InterventionDetails({ intervention, onBack }: InterventionDetail
                       setPhotos(prev => prev.slice(0, -1)); 
                       setPhotoFiles(prev => prev.slice(0, -1));
                     }}
+                    aria-label="Supprimer la photo"
+                    title="Supprimer la photo"
                  >
                     <X className="w-4 h-4" />
                  </button>

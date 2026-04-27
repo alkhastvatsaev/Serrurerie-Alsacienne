@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
+import { BUSINESS_CONFIG } from "@/config/business";
 
-const inter = Inter({
-  variable: "--font-inter",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
 });
+
 
 export const viewport: Viewport = {
   themeColor: "#0f172a",
@@ -17,9 +19,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Serrurerie Alsacienne",
-  description: "Plateforme Logistique de Serrurerie Alsacienne",
-  applicationName: "Serrurerie Als",
+  title: BUSINESS_CONFIG.name,
+  description: `Plateforme Logistique de ${BUSINESS_CONFIG.name}`,
+  applicationName: BUSINESS_CONFIG.name,
   appleWebApp: {
     capable: true,
     title: "SA OS",
@@ -35,7 +37,8 @@ export default function RootLayout({
   return (
     <html lang="fr" className="h-full">
       <head />
-      <body className={`${inter.variable} font-sans antialiased h-full overflow-x-hidden bg-background`}>
+      <body className={`${outfit.variable} font-sans antialiased h-full overflow-x-hidden bg-background`}>
+
         {children}
       </body>
     </html>

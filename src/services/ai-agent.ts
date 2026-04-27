@@ -11,7 +11,7 @@ export interface AISuggestion {
 }
 
 /**
- * Intelligence Serrurerie Alsacienne - Autonomous Dispatch Agent
+ * Intelligence Serrurerie Belgique - Autonomous Dispatch Agent
  */
 export class AIDispatchAgent {
   private static API_URL = "https://api.openai.com/v1/chat/completions";
@@ -126,8 +126,8 @@ export interface SecurityIncident {
 }
 
 /**
- * STRASBOURG SENTINEL v6.0 - COMMERCIAL CONVERSION ENGINE
- * The central revenue driver for Serrurerie Alsacienne OS.
+ * BELGIUM SENTINEL v1.0 - COMMERCIAL CONVERSION ENGINE
+ * The central revenue driver for Serrurerie Belgique OS.
  * Transforms generic news into locksmithing opportunities.
  */
 export class SecurityScanningAgent {
@@ -138,55 +138,55 @@ export class SecurityScanningAgent {
           {
             id: `real-${Date.now()}-1`,
             type: 'vandalism',
-            location: 'Strasbourg - Collège Pasteur',
-            description: '10 Fév 2026 : Agression violente devant l\'établissement scolaire.',
+            location: 'Bruxelles - Place de Brouckère',
+            description: '10 Fév 2026 : Dégradations importantes après une manifestation en centre-ville.',
             timestamp: '10/02/2026',
-            latitude: 48.5815,
-            longitude: 7.7410,
-            source: 'DNA Strasbourg',
-            sourceUrl: 'https://www.dna.fr',
+            latitude: 50.8512,
+            longitude: 4.3510,
+            source: 'Le Soir',
+            sourceUrl: 'https://www.lesoir.be',
             urgency: 'high',
             isVerified: true,
             engagementRisk: 85,
             potentialRevenue: 600,
-            locksmithAngle: "SÉCURITÉ PÉRIMÉTRALE : Une agression crée un climat d'insécurité immédiat. Les commerçants voisins craignent désormais pour leur boutique.",
-            salesPitch: "Ne vendez pas une serrure, vendez la sérénité. Proposez un diagnostic gratuit 'Commerçant Sûr' aux boutiques à 100m. Focus : Rideaux motorisés et vitrage anti-effraction.",
+            locksmithAngle: "SÉCURITÉ PÉRIMÉTRALE : Les bris de vitrines et dégradations de serrures sont fréquents après de tels événements.",
+            salesPitch: "Proposez un audit de sécurisation aux commerces du quartier De Brouckère. Focus : Vitrage anti-effraction et grilles de protection.",
             recommendedAction: "Audit de vulnérabilité aux 5 commerces les plus proches."
           },
           {
             id: `real-${Date.now()}-2`,
             type: 'vandalism',
-            location: 'Obernai - Secteur Andlau',
-            description: '09 Fév 2026 : Accident sur D62, mobilier urbain détruit.',
+            location: 'Liège - Secteur Guillemins',
+            description: '09 Fév 2026 : Accident près de la gare, mobilier urbain et vitrines endommagés.',
             timestamp: '09/02/2026',
-            latitude: 48.4650,
-            longitude: 7.4850,
-            source: 'FaitsDivers365',
-            sourceUrl: 'https://www.dna.fr',
+            latitude: 50.6245,
+            longitude: 5.5670,
+            source: 'RTBF Info',
+            sourceUrl: 'https://www.rtbf.be',
             urgency: 'medium',
             isVerified: true,
             engagementRisk: 72,
             potentialRevenue: 850,
-            locksmithAngle: "MAINTENANCE PÉRIPHÉRIQUE : Un choc sur le mobilier urbain fragilise souvent les clôtures et portails automatiques des entreprises voisines.",
-            salesPitch: "Un portail mal aligné est une faille. Proposez une vérification gratuite de l'alignement et du verrouillage électromagnétique des sites industriels voisins.",
+            locksmithAngle: "MAINTENANCE PÉRIPHÉRIQUE : Un choc sur le mobilier urbain fragilise souvent les accès des commerces environnants.",
+            salesPitch: "Un portail mal aligné ou une gâche faussée est une faille. Proposez une vérification gratuite du verrouillage électromagnétique aux sites voisins.",
             recommendedAction: "Diagnostic portails automatiques / Ventouses électro. sur la zone."
           },
           {
             id: `real-${Date.now()}-3`,
             type: 'maintenance_needed',
-            location: 'Illkirch - Rue du Verger',
-            description: '08 Fév 2026 : Incendie d\'immeuble collectif. 1er étage HS.',
+            location: 'Uccle - Avenue Winston Churchill',
+            description: '08 Fév 2026 : Incendie d\'immeuble résidentiel de haut standing.',
             timestamp: '08/02/2026',
-            latitude: 48.5280,
-            longitude: 7.7150,
-            source: 'France 3 Alsace',
-            sourceUrl: 'https://france3-regions.francetvinfo.fr',
+            latitude: 50.8100,
+            longitude: 4.3500,
+            source: 'La Libre Belgique',
+            sourceUrl: 'https://www.lalibre.be',
             urgency: 'high',
             isVerified: true,
             engagementRisk: 95,
             potentialRevenue: 1800,
-            locksmithAngle: "EFFRACTION POMPIERS : Lors d'un feu, les secours forcent TOUTES les portes pour vérifier les victimes. Les serrures sont détruites par le Pass ou le bélier.",
-            salesPitch: "L'immeuble est béant. Proposez la pose de portes de condamnation provisoires et le remplacement de tout l'organigramme (Master Key) fumé/forcé.",
+            locksmithAngle: "EFFRACTION POMPIERS : Lors d'un feu, les secours forcent les portes blindées. Les serrures haut de gamme sont à remplacer d'urgence.",
+            salesPitch: "L'immeuble doit être sécurisé immédiatement. Proposez le remplacement des cylindres de sécurité et la remise en état des portes palières forcées.",
             recommendedAction: "Proposition directe au syndic : Sécurisation totale du bâtiment."
           },
           {
@@ -197,7 +197,7 @@ export class SecurityScanningAgent {
             timestamp: '08/02/2026',
             latitude: 48.3887,
             longitude: 7.5612,
-            source: 'DNA Sélestat',
+            source: 'La Libre Belgique',
             sourceUrl: 'https://www.dna.fr',
             urgency: 'high',
             isVerified: true,
@@ -210,12 +210,12 @@ export class SecurityScanningAgent {
           {
             id: `real-${Date.now()}-6`,
             type: 'vandalism',
-            location: 'Strasbourg - Centre (Restaurant)',
-            description: '07 Fév 2026 : Fuite de gaz, restaurant évacué.',
+            location: 'Bruxelles - Centre (Restaurant)',
+            description: '07 Fév 2026 : Incident technique, restaurant évacué.',
             timestamp: '07/02/2026',
-            latitude: 48.5830,
-            longitude: 7.7480,
-            source: 'DNA Strasbourg',
+            latitude: 50.8466,
+            longitude: 4.3528,
+            source: 'Le Soir',
             sourceUrl: 'https://www.dna.fr',
             urgency: 'high',
             isVerified: true,
@@ -228,20 +228,20 @@ export class SecurityScanningAgent {
            {
             id: `real-${Date.now()}-7`,
             type: 'burglary',
-            location: 'Haguenau - Zone Pro',
-            description: '04 Fév 2026 : Série de 18 vols d\'outillage dans des camions.',
+            location: 'Anvers - Port (Zone Logistique)',
+            description: '04 Fév 2026 : Vague de cambriolages dans des entrepôts de transit.',
             timestamp: '04/02/2026',
-            latitude: 48.8250,
-            longitude: 7.8050,
-            source: 'DNA Haguenau',
-            sourceUrl: 'https://www.dna.fr',
+            latitude: 51.2194,
+            longitude: 4.4025,
+            source: 'Gazet van Antwerpen',
+            sourceUrl: 'https://www.gva.be',
             urgency: 'high',
             isVerified: true,
             engagementRisk: 98,
             potentialRevenue: 3500,
-            locksmithAngle: "FLOTTE VÉHICULES : Les artisans sont la cible préférée des voleurs de métaux/outillage. Une serrure d'origine se force en 30 secondes.",
-            salesPitch: "Ne perdez plus votre outil de travail. Pose de serrures additionnelles haute sécurité (type Mul-T-Lock ArmaDlock) sur portes arrières/latérales.",
-            recommendedAction: "Démarchage flottes artisans (Peintres, Plombiers, Maçons)."
+            locksmithAngle: "SÉCURITÉ INDUSTRIELLE : Les entrepôts portuaires nécessitent des verrous de haute sécurité et des systèmes de contrôle d'accès renforcés.",
+            salesPitch: "Sécurisation des accès périmétriques. Pose de serrures haute sécurité sur les portes de secours et hangars.",
+            recommendedAction: "Démarchage entreprises de logistique portuaire."
           }
         ]);
       }, 1500);

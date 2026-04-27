@@ -33,27 +33,27 @@ const walk = (dir, done) => {
 };
 
 const replacements = [
-  { regex: /SERRURE OS/g, replacement: "Serrurerie Alsacienne OS" },
-  { regex: /Serrure OS/g, replacement: "Serrurerie Alsacienne OS" },
-  { regex: /SERRURE Strasbourg/g, replacement: "Serrurerie Alsacienne" },
-  { regex: /SERRURE PRO™/g, replacement: "Serrurerie Alsacienne PRO™" },
-  { regex: /annuaire SERRURE/g, replacement: "annuaire Serrurerie Alsacienne" },
+  { regex: /SERRURE OS/g, replacement: "Serrurerie Bruxelloise OS" },
+  { regex: /Serrure OS/g, replacement: "Serrurerie Bruxelloise OS" },
+  { regex: /SERRURE Bruxelles/g, replacement: "Serrurerie Bruxelloise" },
+  { regex: /SERRURE PRO™/g, replacement: "Serrurerie Bruxelloise PRO™" },
+  { regex: /annuaire SERRURE/g, replacement: "annuaire Serrurerie Bruxelloise" },
   {
     regex: /SERRURE Intelligence/g,
-    replacement: "Intelligence Serrurerie Alsacienne",
+    replacement: "Intelligence Serrurerie Bruxelloise",
   },
-  { regex: /serrure-strasbourg\.fr/g, replacement: "serrurerie-alsacienne.fr" },
-  { regex: /smartlock-manager/g, replacement: "serrurerie-alsacienne" },
-  { regex: /smartlock-elite\.fr/g, replacement: "serrurerie-alsacienne.fr" },
+  { regex: /serrure-bruxelles\.be/g, replacement: "serrurerie-bruxelloise.be" },
+  { regex: /smartlock-manager/g, replacement: "serrurerie-bruxelloise" },
+  { regex: /smartlock-elite\.be/g, replacement: "serrurerie-bruxelloise.be" },
   {
     regex: /demo_vatsaev_serrure/g,
-    replacement: "demo_vatsaev_serrurerie_alsacienne",
+    replacement: "demo_vatsaev_serrurerie_bruxelloise",
   },
   {
     regex: /SerrureApp-Admin-Dashboard/g,
-    replacement: "SerrurerieAlsacienne-Admin-Dashboard",
+    replacement: "SerrurerieBruxelloise-Admin-Dashboard",
   },
-  { regex: /SERRURE/g, replacement: "Serrurerie Alsacienne" }, // Be careful not to replace general 'serrure' usage
+  { regex: /SERRURE/g, replacement: "Serrurerie Bruxelloise" }, // Be careful not to replace general 'serrure' usage
 ];
 
 walk(__dirname, (err, files) => {
