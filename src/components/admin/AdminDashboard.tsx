@@ -1248,7 +1248,7 @@ export function AdminDashboard() {
                               Télécharger Facture
                            </Button>
                            
-                           {/* Email Export - Direct to alkhastvatsaev@gmail.com */}
+                           {/* Email export uses the server-configured recipient. */}
                            <Button 
                               variant="secondary" 
                               className="h-14 rounded-2xl bg-black/80 text-white text-2xs font-black uppercase tracking-widest shadow-lg flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-all border-none group relative overflow-hidden"
@@ -1265,7 +1265,7 @@ export function AdminDashboard() {
                                        });
                                      }
                                      
-                                     alert('Devis envoyé avec succès à alkhastvatsaev@gmail.com');
+                                     alert('Devis envoyé avec succès');
                                   } catch {
                                      alert('Erreur d\'envoi (Vérifiez la clé API Resend)');
                                   }
@@ -1290,7 +1290,7 @@ export function AdminDashboard() {
                                        });
                                      }
 
-                                     alert('Facture envoyée avec succès à alkhastvatsaev@gmail.com');
+                                     alert('Facture envoyée avec succès');
                                   } catch {
                                      alert('Erreur d\'envoi (Vérifiez la clé API Resend)');
                                   }

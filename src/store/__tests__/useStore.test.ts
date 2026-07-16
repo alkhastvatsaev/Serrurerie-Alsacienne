@@ -46,13 +46,16 @@ describe('useStore', () => {
       address: '123 Test St',
       status: 'pending',
       tech_id: 'tech-1',
+      asset_id: 'asset-1',
       date: '2026-02-09',
       time: '10:00',
       description: 'Test',
       latitude: 48.5,
       longitude: 7.7,
       category: 'repair',
-      client_id: 'c1'
+      client_id: 'c1',
+      parts_used: [],
+      payment_status: 'unpaid'
     };
 
     act(() => {

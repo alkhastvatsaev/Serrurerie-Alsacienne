@@ -4,24 +4,5 @@
     "location": "nam5",
     "rules": "firebase/firestore.rules",
     "indexes": "firebase/firestore.indexes.json"
-  },
-  "hosting": {
-    "public": "public",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
-  },
-  "auth": {
-    "providers": {
-      "emailPassword": true
-    }
   }
 }

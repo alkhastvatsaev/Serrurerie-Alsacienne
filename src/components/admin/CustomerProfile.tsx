@@ -44,18 +44,6 @@ interface CustomerProfileProps {
 }
 
 export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClose }) => {
-  // Use try-catch block for the entire component logic to avoid crashing the parent
-  try {
-    if (!client) return null;
-    
-    // Hooks MUST be outside any try-catch that could return early, but here they are at the top.
-    // However, the rule is hooks must be called exactly the same number of times.
-    // So we don't return null before hooks.
-  } catch (e) {
-      console.error("CustomerProfile setup error:", e);
-      return null;
-  }
-
   const [activeTab, setActiveTab] = useState<'activity' | 'history' | 'notes'>('activity');
   const [isEditing, setIsEditing] = useState(false);
   const [editedClient, setEditedClient] = useState({
@@ -73,7 +61,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
       const isByAddress = client.address && i.address && typeof i.address === 'string' && i.address.toLowerCase().includes(client.address.toLowerCase());
       return isById || isByAddress;
     });
-  }, [allInterventions, client?.id, client?.address]);
+  }, [allInterventions, client]);
   
   const rawUsers = useStore(state => state.users);
   const users = React.useMemo(() => Array.isArray(rawUsers) ? rawUsers : [], [rawUsers]);
@@ -125,7 +113,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ client, onClos
     if (!client) return [];
     
     // 1. Firebase Subcollection Activities
-    let acts: ActivityItem[] = [...dbActivities];
+    const acts: ActivityItem[] = [...dbActivities];
     
     // 2. Fallback: Array Activities (for backward compatibility before migration)
     if (Array.isArray(client.activities)) {

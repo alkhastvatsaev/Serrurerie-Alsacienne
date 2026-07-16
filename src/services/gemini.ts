@@ -1,11 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "AIzaSy..."; // Placeholder or actual key if provided
-
-const genAI = new GoogleGenerativeAI(API_KEY);
-
 export async function identifyLockFromImage(file: File): Promise<string> {
+  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  if (!apiKey) {
+    return "Analyse Simulée (Clé API manquante) : Serrure Vachette Radialis, Cylindre 30x40mm. Remplacement recommandé : Ref-V892.";
+  }
+
   try {
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Convert file to base64
