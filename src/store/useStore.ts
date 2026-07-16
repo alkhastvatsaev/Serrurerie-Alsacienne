@@ -128,7 +128,7 @@ const DUMMY_USERS: User[] = [
 const DUMMY_CLIENTS: Client[] = [
   { id: 'c1', name: 'Résidence Louise', address: 'Avenue Louise 120, 1050 Bruxelles', contact_info: '+32 2 511 22 33' },
   { id: 'c2', name: 'Bureaux de la Bourse', address: 'Place de la Bourse 1, 1000 Bruxelles', contact_info: '+32 2 444 55 66' },
-  { id: 'user-test', name: 'Alkhast Vatsaev', address: 'Rue de la Loi 16, 1000 Bruxelles', phone: '+32 470 00 00 00', email: 'alkhastvatsaev@gmail.com', contact_info: '+32 470 00 00 00' },
+  { id: 'user-test', name: 'Demo Customer', address: 'Rue de la Loi 16, 1000 Bruxelles', phone: '+32 470 00 00 00', email: 'customer@example.com', contact_info: '+32 470 00 00 00' },
 ];
 
 const DUMMY_ASSETS: Asset[] = [

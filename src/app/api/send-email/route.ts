@@ -2,19 +2,28 @@
 import { Resend } from 'resend';
 import { NextRequest, NextResponse } from 'next/server';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder');
-
 export async function POST(req: NextRequest) {
   try {
+    const apiKey = process.env.RESEND_API_KEY;
+    const recipient = process.env.EMAIL_RECIPIENT;
+
+    if (!apiKey || !recipient) {
+      return NextResponse.json(
+        { error: 'Email service is not configured' },
+        { status: 503 }
+      );
+    }
+
     const { pdfBase64, filename, type, interventionId, address } = await req.json();
 
     if (!pdfBase64) {
       return NextResponse.json({ error: 'Missing PDF content' }, { status: 400 });
     }
 
+    const resend = new Resend(apiKey);
     const { data, error } = await resend.emails.send({
       from: 'Smart Lock <onboarding@resend.dev>',
-      to: ['alkhastvatsaev@gmail.com'],
+      to: [recipient],
       subject: `${type === 'QUOTE' ? 'Devis' : 'Facture'} - ${address}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333;">

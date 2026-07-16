@@ -25,7 +25,7 @@ export async function fetchCustomerEmails(email: string): Promise<GmailMessage[]
         return [
             {
                 id: 'demo-1',
-                from: 'alkhastvatsaev@gmail.com',
+                from: 'customer@example.com',
                 subject: 'Demande de devis - Serrure Porte Blindée',
                 snippet: 'Bonjour, je souhaiterais obtenir un devis pour le remplacement de ma serrure Fichet...',
                 date: new Date().toISOString()

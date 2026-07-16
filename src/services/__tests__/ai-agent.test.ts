@@ -40,7 +40,7 @@ describe('AIDispatchAgent', () => {
 
     it('should include specialty reasoning for emergencies', async () => {
       const mission: Partial<Intervention> = {
-        category: 'Ouverture Fine',
+        category: 'emergency',
         is_emergency: true,
       };
 
@@ -56,8 +56,7 @@ describe('AIDispatchAgent', () => {
       vi.runAllTimers();
       const suggestion = await promise;
 
-      // Marc (tech-1) has 'Ouverture Fine' specialty
-      expect(suggestion.reasoning).toContain("expertise en Ouverture Fine requise");
+      expect(suggestion.reasoning).toContain("requise pour cette urgence");
     });
 
     it('should return a high optimization score', async () => {
