@@ -6,6 +6,15 @@ A mobile-first operations prototype for a Belgian locksmith team. It brings disp
 
 The public deployment is a portfolio demonstration with sample business data. Use **Developer Access** on the sign-in screen to explore the admin workflow; no real customer account is required.
 
+![Locksmith dispatch dashboard on desktop](docs/screenshots/dashboard-desktop.png)
+
+<details>
+<summary>Mobile technician view</summary>
+
+![Locksmith dispatch map on mobile](docs/screenshots/dashboard-mobile.png)
+
+</details>
+
 ## Product and users
 
 The product is designed around two roles:
