@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -22,16 +24,20 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
+*.log
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+firebase-debug.log*
 
-# env files (can opt-in for committing if needed)
+# environment files
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -40,5 +46,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# editor and local agent state
+.idea/
+.vscode/
+.cursor/
+.claude/
+AGENTS.md
+CLAUDE.md
+CHECKPOINT*.md
+
+# local platform output
 Android/
 .firebase/
