@@ -114,3 +114,7 @@ Unit and component tests cover pricing, geographic assignment, store behaviour, 
 - Replace remaining simulations with sandboxed provider integrations
 - Add Firebase emulator integration tests and focused Playwright coverage
 - Improve accessibility, loading states and operational error recovery
+
+## Author
+
+Built by [Alkhast Vatsaev](https://alkhastvatsaev.dev) — junior Full Stack JavaScript/TypeScript developer ([portfolio](https://alkhastvatsaev.dev), [FR](https://alkhastvatsaev.dev/fr/developpeur-full-stack)).
